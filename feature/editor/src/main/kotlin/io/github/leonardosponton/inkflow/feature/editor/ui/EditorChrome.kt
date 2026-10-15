@@ -92,7 +92,8 @@ fun EditorTopBar(
     onBack: () -> Unit,
     onIntent: (EditorIntent) -> Unit,
     onRenameProject: () -> Unit,
-    onExport: (() -> Unit)?,
+    onExport: () -> Unit,
+    onImportDdl: () -> Unit,
 ) {
     var menu by remember { mutableStateOf(false) }
     Surface(tonalElevation = 2.dp) {
@@ -122,7 +123,7 @@ fun EditorTopBar(
                     Icon(Icons.Outlined.WarningAmber, stringResource(R.string.validation), tint = tint(state.showIssues))
                 }
             }
-            onExport?.let { IconButton(onClick = it) { Icon(Icons.Outlined.IosShare, stringResource(R.string.export)) } }
+            IconButton(onClick = onExport) { Icon(Icons.Outlined.IosShare, stringResource(R.string.export)) }
             Box {
                 IconButton(onClick = { menu = true }) { Icon(Icons.Outlined.MoreVert, stringResource(R.string.more)) }
                 DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
@@ -156,6 +157,10 @@ fun EditorTopBar(
                     DropdownMenuItem(text = { Text(stringResource(R.string.paste)) }, enabled = state.clipboardFull, onClick = {
                         menu = false
                         onIntent(EditorIntent.Paste)
+                    })
+                    DropdownMenuItem(text = { Text(stringResource(R.string.import_ddl)) }, onClick = {
+                        menu = false
+                        onImportDdl()
                     })
                 }
             }

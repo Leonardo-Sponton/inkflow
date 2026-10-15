@@ -4,4 +4,5 @@ plugins {
 
 dependencies {
     implementation(project(":domain:project"))
+    implementation(project(":domain:export"))
 }

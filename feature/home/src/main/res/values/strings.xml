@@ -24,4 +24,5 @@
     <string name="empty_home">No projects yet. Tap “New project” to start sketching.</string>
     <string name="delete_project_title">Delete project?</string>
     <string name="delete_project_message">“%1$s” and all its tabs will be deleted permanently.</string>
+    <string name="import_project">Import project (.inkflow)</string>
 </resources>

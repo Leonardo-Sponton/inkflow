@@ -22,12 +22,19 @@ import io.github.leonardosponton.inkflow.domain.canvas.command.UpdateStyle
 import io.github.leonardosponton.inkflow.domain.canvas.command.UpdateText
 import io.github.leonardosponton.inkflow.domain.canvas.element.CanvasElement
 import io.github.leonardosponton.inkflow.domain.canvas.element.Connector
+import io.github.leonardosponton.inkflow.domain.canvas.element.Endpoint
 import io.github.leonardosponton.inkflow.domain.canvas.element.ImageElement
 import io.github.leonardosponton.inkflow.domain.canvas.element.LabelPosition
 import io.github.leonardosponton.inkflow.domain.canvas.element.ShapeNode
 import io.github.leonardosponton.inkflow.domain.canvas.element.TextElement
 import io.github.leonardosponton.inkflow.domain.canvas.element.TextKind
 import io.github.leonardosponton.inkflow.domain.canvas.scene.Scene
+import io.github.leonardosponton.inkflow.domain.dbmodel.DbNotation
+import io.github.leonardosponton.inkflow.domain.dbmodel.DbRelationship
+import io.github.leonardosponton.inkflow.domain.dbmodel.DbShapes
+import io.github.leonardosponton.inkflow.domain.dbmodel.DbTableContent
+import io.github.leonardosponton.inkflow.domain.dbmodel.DdlImporter
+import io.github.leonardosponton.inkflow.domain.dbmodel.TableLayouter
 import io.github.leonardosponton.inkflow.domain.diagram.NodeContent
 import io.github.leonardosponton.inkflow.domain.diagram.PlainLabel
 import io.github.leonardosponton.inkflow.domain.diagram.ShapeTypeKey
@@ -57,6 +64,7 @@ internal class SelectionActions(private val vm: EditorViewModel) {
             is EditorIntent.ChangeShape -> changeShape(intent.id, intent.shape)
             is EditorIntent.PlaceShape -> placeShape(intent.key, intent.screen)
             is EditorIntent.InsertImage -> insertImage(intent.bytes, intent.mimeType)
+            is EditorIntent.ImportDdl -> importDdl(intent.sql)
             is EditorIntent.BeginTextEdit -> beginTextEdit(intent.id)
             is EditorIntent.CommitText -> commitText(intent.id, intent.text)
             EditorIntent.CancelTextEdit -> closeEditor()
@@ -165,6 +173,40 @@ internal class SelectionActions(private val vm: EditorViewModel) {
         }
     }
 
+    /** Lays out tables parsed from SQL in a grid at the view center and links their foreign keys. */
+    private fun importDdl(sql: String) {
+        val result = DdlImporter.parse(sql)
+        if (result.tables.isEmpty()) {
+            vm.updateState { it.copy(message = EditorMessage("No CREATE TABLE statements found")) }
+            return
+        }
+        val nodeIds = result.tables.keys.associateWith { vm.newId() }
+        val def = DbShapes.Table
+        val origin = vm.camera.screenToWorld(Vec2(vm.viewport.width / 4, vm.viewport.height / 4), vm.viewport)
+        val nodes = result.tables.entries.mapIndexed { i, (key, table) ->
+            val linked = table.copy(
+                columns = table.columns.map { c ->
+                    c.copy(references = c.references?.let { r -> r.copy(tableId = nodeIds.getValue(r.tableId).value) })
+                },
+            )
+            val size = TableLayouter.preferredSize(linked, def, def.defaultStyle, vm.textMetrics)
+            val at = origin + Vec2((i % DDL_COLUMNS) * DDL_CELL_W, (i / DDL_COLUMNS) * DDL_CELL_H)
+            ShapeNode(nodeIds.getValue(key), def.key, Rect.fromOriginSize(at, size), linked, def.defaultStyle, layerId = vm.activeLayer)
+        }
+        val edges = nodes.flatMap { child ->
+            (child.content as DbTableContent).columns.mapNotNull { c ->
+                val ref = c.references ?: return@mapNotNull null
+                val base =
+                    Connector(vm.newId(), Endpoint.Attached(child.id), Endpoint.Attached(ElementId(ref.tableId)), layerId = vm.activeLayer)
+                DbNotation.applyRelationship(base, DbRelationship(identifying = c.primaryKey, fkColumnId = c.id))
+            }
+        }
+        run(AddElements(nodes + edges))
+        vm.selection = nodes.map { it.id }.toSet()
+        val skipped = if (result.skipped > 0) " (${result.skipped} foreign keys skipped)" else ""
+        vm.updateState { it.copy(message = EditorMessage("Imported ${nodes.size} tables$skipped")) }
+    }
+
     // ---- inline text ----------------------------------------------------------------------------
 
     fun beginTextEdit(id: ElementId) {
@@ -212,5 +254,8 @@ internal class SelectionActions(private val vm: EditorViewModel) {
     private companion object {
         const val DUPLICATE_OFFSET = 24.0
         const val IMAGE_MAX_SCREEN = 480.0
+        const val DDL_COLUMNS = 3
+        const val DDL_CELL_W = 340.0
+        const val DDL_CELL_H = 300.0
     }
 }

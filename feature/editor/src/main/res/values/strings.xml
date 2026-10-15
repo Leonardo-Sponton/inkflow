@@ -103,4 +103,5 @@
     <string name="participation">Participation</string>
     <string name="cardinality">Cardinality</string>
     <string name="total_participation">Total participation</string>
+    <string name="import_ddl">Import SQL (CREATE TABLE)…</string>
 </resources>

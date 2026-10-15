@@ -17,6 +17,7 @@ import io.github.leonardosponton.inkflow.core.model.Size
 import io.github.leonardosponton.inkflow.core.model.TextAlign
 import io.github.leonardosponton.inkflow.core.model.Vec2
 import io.github.leonardosponton.inkflow.domain.canvas.connector.ConnectorRouter
+import io.github.leonardosponton.inkflow.domain.canvas.element.BrushKind
 import io.github.leonardosponton.inkflow.domain.canvas.element.CanvasElement
 import io.github.leonardosponton.inkflow.domain.canvas.element.Connector
 import io.github.leonardosponton.inkflow.domain.canvas.element.ImageElement
@@ -42,6 +43,8 @@ class SceneDrawer(
     private val catalog: NotationCatalog,
     val metrics: AndroidTextMetrics,
     private val images: ImageSource,
+    /** Draw ink as paths instead of meshes (PDF and other software canvases). */
+    private val forcePathInk: Boolean = false,
 ) {
     private val outlines = OutlinePaths()
     private val inkCache = InkStrokeCache()
@@ -257,7 +260,7 @@ class SceneDrawer(
         if (size * pass.zoom < MIN_TEXT_PX || line.size < 2) return
         c.labels.forEach { label ->
             val m = metrics.measure(label.text, size, false, null)
-            val at = labelAnchor(c, line, label.position, m)
+            val at = ConnectorLabels.anchor(c, line, label.position, m, catalog)
             val box = Rect.fromCenter(at, Size(m.width + LABEL_PAD * 2, m.height + LABEL_PAD))
             if (label.position == LabelPosition.MIDDLE) {
                 fill.color = pass.palette.labelBackground
@@ -273,32 +276,6 @@ class SceneDrawer(
         }
     }
 
-    /**
-     * Middle labels sit on the line; start/end labels (multiplicities, roles) sit beside the line,
-     * just past the end marker, so they never cover it.
-     */
-    private fun labelAnchor(c: Connector, line: List<Vec2>, pos: LabelPosition, textSize: Size): Vec2 {
-        if (pos == LabelPosition.MIDDLE) return pointAlongPolyline(line, pos.fraction)
-        val fromStart = pos == LabelPosition.START
-        val pts = if (fromStart) line else line.asReversed()
-        val marker = catalog.markers[if (fromStart) c.startMarker else c.endMarker]
-        val along = (marker?.lineInset ?: 0.0) + END_LABEL_GAP + textSize.width / 2
-        val base = pointAtDistance(pts, along)
-        val dir = (pts[1] - pts[0]).normalized()
-        val normal = Vec2(-dir.y, dir.x)
-        return base + normal * (textSize.height / 2 + END_LABEL_GAP / 2)
-    }
-
-    private fun pointAtDistance(pts: List<Vec2>, distance: Double): Vec2 {
-        var remaining = distance
-        for (i in 0 until pts.lastIndex) {
-            val seg = pts[i].distanceTo(pts[i + 1])
-            if (remaining <= seg) return pts[i].lerp(pts[i + 1], if (seg == 0.0) 0.0 else remaining / seg)
-            remaining -= seg
-        }
-        return pts.last()
-    }
-
     // ---- ink / text / images ------------------------------------------------------------------
 
     private fun drawInk(canvas: Canvas, s: InkStroke, pass: Pass) {
@@ -306,9 +283,14 @@ class SceneDrawer(
         val color = pass.palette.adapt(s.brush.color)
         canvas.save()
         canvas.translate(s.origin.x.toFloat(), s.origin.y.toFloat())
-        scratchMatrix.set(pass.worldToDevice)
-        scratchMatrix.preTranslate(s.origin.x.toFloat(), s.origin.y.toFloat())
-        inkRenderer.draw(canvas, inkCache.get(s, color), scratchMatrix)
+        if (forcePathInk) {
+            fill.color = if (s.brush.kind == BrushKind.HIGHLIGHTER) ColorArgb(color).withAlpha(HIGHLIGHTER_ALPHA).argb else color
+            canvas.drawPath(InkOutlines.path(inkCache.get(s, color)), fill)
+        } else {
+            scratchMatrix.set(pass.worldToDevice)
+            scratchMatrix.preTranslate(s.origin.x.toFloat(), s.origin.y.toFloat())
+            inkRenderer.draw(canvas, inkCache.get(s, color), scratchMatrix)
+        }
         canvas.restore()
     }
 
@@ -363,10 +345,10 @@ class SceneDrawer(
         const val MAX_MARKER_SCALE = 3.0
         const val LABEL_SCALE = 0.85
         const val LABEL_PAD = 4.0
-        const val END_LABEL_GAP = 8.0
         const val TEXT_PAD = 8.0
         const val SHADOW = 0x22000000
         const val SHADOW_OFFSET = 3f
         const val BLACK = 0xFF000000.toInt()
+        const val HIGHLIGHTER_ALPHA = 0x66
     }
 }

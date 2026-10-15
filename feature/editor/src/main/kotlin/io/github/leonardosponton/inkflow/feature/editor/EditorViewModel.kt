@@ -388,6 +388,9 @@ class EditorViewModel
 
         internal suspend fun flushPersistence() = persister.flush()
 
+        /** Exports read the database, so pending edits are written first. */
+        suspend fun flushForExport() = persister.flush()
+
         internal val textMetrics: TextMetrics get() = renderers.metrics
 
         override fun onCleared() {

@@ -68,17 +68,22 @@ import io.github.leonardosponton.inkflow.feature.editor.ui.ToolRail
 import io.github.leonardosponton.inkflow.feature.editor.ui.ValidationPanel
 import io.github.leonardosponton.inkflow.feature.editor.ui.ZoomControls
 import io.github.leonardosponton.inkflow.feature.editor.ui.keyboardShortcut
+import io.github.leonardosponton.inkflow.feature.export.ExportSheet
+import io.github.leonardosponton.inkflow.feature.export.ExportTarget
 import io.github.leonardosponton.inkflow.feature.palette.ShapePalette
 import kotlinx.coroutines.launch
 
 @Composable
-fun EditorScreen(viewModel: EditorViewModel, onBack: () -> Unit, onExport: (() -> Unit)? = null) {
+fun EditorScreen(viewModel: EditorViewModel, onBack: () -> Unit) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val onIntent = viewModel::onIntent
     val focus = remember { FocusRequester() }
     var renaming by remember { mutableStateOf<RenameTarget?>(null) }
     var toolbarRight by remember { mutableStateOf(false) }
+    var exporting by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
     val imagePicker = rememberImagePicker(onIntent)
+    val ddlPicker = rememberDdlPicker(onIntent)
 
     Surface(Modifier.fillMaxSize()) {
         Column(
@@ -92,7 +97,13 @@ fun EditorScreen(viewModel: EditorViewModel, onBack: () -> Unit, onExport: (() -
                 onBack = onBack,
                 onIntent = onIntent,
                 onRenameProject = { renaming = RenameTarget.Project(state.projectName) },
-                onExport = onExport,
+                onExport = {
+                    scope.launch {
+                        viewModel.flushForExport()
+                        exporting = true
+                    }
+                },
+                onImportDdl = ddlPicker,
             )
             TabStrip(state.tabs, state.activeTabId, onIntent) { renaming = RenameTarget.Tab(it.id, it.title) }
             BoxWithConstraints(Modifier.fillMaxSize()) {
@@ -114,6 +125,14 @@ fun EditorScreen(viewModel: EditorViewModel, onBack: () -> Unit, onExport: (() -
         Overlays(viewModel, state)
     }
     LaunchedEffect(Unit) { focus.requestFocus() }
+    val tab = state.activeTabId
+    if (exporting && tab != null) {
+        ExportSheet(
+            target = ExportTarget(viewModel.projectId, tab, state.selected.map { it.id }.toSet(), state.settings.darkCanvas),
+            hasSelection = state.hasSelection,
+            onDismiss = { exporting = false },
+        )
+    }
     renaming?.let { target ->
         RenameDialog(target.initial, onDismiss = { renaming = null }) { text ->
             when (target) {
@@ -147,6 +166,22 @@ private fun rememberImagePicker(onIntent: (EditorIntent) -> Unit): () -> Unit {
         }
     }
     return { launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }
+}
+
+@Composable
+private fun rememberDdlPicker(onIntent: (EditorIntent) -> Unit): () -> Unit {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri ?: return@rememberLauncherForActivityResult
+        scope.launch {
+            val sql = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                context.contentResolver.openInputStream(uri)?.use { it.readBytes().decodeToString() }
+            } ?: return@launch
+            onIntent(EditorIntent.ImportDdl(sql))
+        }
+    }
+    return { launcher.launch(arrayOf("application/sql", "text/*", "application/octet-stream")) }
 }
 
 @Composable

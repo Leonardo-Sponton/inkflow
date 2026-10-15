@@ -153,6 +153,8 @@ sealed interface EditorIntent {
 
     data class InsertImage(val bytes: ByteArray, val mimeType: String) : EditorIntent
 
+    data class ImportDdl(val sql: String) : EditorIntent
+
     // inline text and prompts
     data class BeginTextEdit(val id: ElementId) : EditorIntent
 

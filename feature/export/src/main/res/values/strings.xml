@@ -1,0 +1,23 @@
+<resources>
+    <string name="export_title">Export</string>
+    <string name="format">Format</string>
+    <string name="dialect">SQL dialect</string>
+    <string name="scope">What to export</string>
+    <string name="scope_tab">Current tab</string>
+    <string name="scope_selection">Selection</string>
+    <string name="scope_project">All tabs (one page each)</string>
+    <string name="scale">Resolution</string>
+    <string name="transparent">Transparent background</string>
+    <string name="save_to_file">Save to file…</string>
+    <string name="share">Share…</string>
+    <string name="export_done">Exported.</string>
+    <string name="export_failed">Export failed: %1$s</string>
+    <string name="offline_note">Files are written by Inkflow on this device; sharing hands the file to the app you choose.</string>
+    <string name="hint_png">Raster image of the tab or selection.</string>
+    <string name="hint_pdf">Vector PDF; choose “All tabs” for one page per tab.</string>
+    <string name="hint_svg">Scalable vector image (shapes, text and ink outlines).</string>
+    <string name="hint_inkflow">The whole project (all tabs and images) in one file you can import later.</string>
+    <string name="hint_sql">CREATE TABLE statements for the tables on this tab.</string>
+    <string name="hint_plantuml">PlantUML text for the class diagram on this tab.</string>
+    <string name="hint_mermaid">Mermaid erDiagram for the tables on this tab.</string>
+</resources>
