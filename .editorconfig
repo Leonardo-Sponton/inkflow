@@ -8,8 +8,8 @@ indent_style = space
 indent_size = 4
 
 [*.{kt,kts}]
-max_line_length = 120
-ktlint_code_style = ktlint_official
+max_line_length = 140
+ktlint_code_style = intellij_idea
 ktlint_function_naming_ignore_when_annotated_with = Composable
 ktlint_standard_function-signature = disabled
 ktlint_standard_class-signature = disabled
@@ -26,3 +26,6 @@ ktlint_standard_no-consecutive-comments = disabled
 
 [*.{yml,yaml,toml,json,md}]
 indent_size = 2
+
+[**/src/{test,androidTest}/**.kt]
+max_line_length = off

@@ -26,11 +26,11 @@ class QualityConventionPlugin : Plugin<Project> {
         extensions.configure<SpotlessExtension> {
             kotlin {
                 target("src/**/*.kt")
-                ktlint(libs.findVersion("ktlint").get().requiredVersion)
+                ktlint(libs.findVersion("ktlint").get().requiredVersion).setEditorConfigPath(rootProject.file(".editorconfig"))
             }
             kotlinGradle {
                 target("*.gradle.kts")
-                ktlint(libs.findVersion("ktlint").get().requiredVersion)
+                ktlint(libs.findVersion("ktlint").get().requiredVersion).setEditorConfigPath(rootProject.file(".editorconfig"))
             }
         }
     }

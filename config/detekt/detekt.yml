@@ -42,7 +42,7 @@ style:
     ignoreEnums: true
     ignoreNamedArgument: true
     ignoreHashCodeFunction: true
-    ignoreNumbers: ['-1', '0', '1', '2', '0.5', '0.0', '1.0', '2.0', '-1.0', '0f', '1f', '2f', '0.5f']
+    ignoreNumbers: ['-1', '0', '1', '2', '3', '4', '5', '6', '8', '10', '24', '100', '255', '1000', '0.5', '0.25', '0.75', '1e-6', '16777215']
     excludes: ['**/test/**', '**/androidTest/**', '**/designsystem/**', '**/*Screen.kt', '**/*Theme.kt', '**/*Shapes*.kt', '**/*Symbols*.kt', '**/*Markers*.kt']
   ReturnCount:
     max: 4
@@ -54,7 +54,10 @@ style:
   ForbiddenComment:
     active: false
   MaxLineLength:
-    maxLineLength: 120
+    maxLineLength: 140
+    excludes: ['**/test/**', '**/androidTest/**']
+  LoopWithTooManyJumpStatements:
+    active: false
   DestructuringDeclarationWithTooManyEntries:
     maxDestructuringEntries: 4
 
