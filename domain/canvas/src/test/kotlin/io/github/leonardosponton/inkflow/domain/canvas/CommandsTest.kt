@@ -232,3 +232,14 @@ class CommandsTest {
         assertFalse(labelled.attachedNodes().isNotEmpty())
     }
 }
+
+class SelfLoopTest {
+    @Test
+    fun `connector to the same node loops on the right`() {
+        val s = session()
+        s.execute(AddElements(listOf(node("a", 0.0, 0.0), edge("e", "a", "a"))))
+        val route = (s.scene[id("e")] as Connector).route
+        assertEquals(4, route.size)
+        assertTrue(route.all { it.x >= 100.0 })
+    }
+}

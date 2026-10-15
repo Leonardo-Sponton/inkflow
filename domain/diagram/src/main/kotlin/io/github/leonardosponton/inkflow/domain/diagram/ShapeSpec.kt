@@ -56,7 +56,7 @@ enum class PathFill {
     NONE,
 }
 
-data class ShapePath(val ops: List<PathOp>, val fill: PathFill = PathFill.FILL, val stroked: Boolean = true)
+data class ShapePath(val ops: List<PathOp>, val fill: PathFill = PathFill.FILL, val stroked: Boolean = true, val dashed: Boolean = false)
 
 /** Outline the renderer draws for a shape; several sub-paths allow decorations (bars, folds, waves). */
 data class ShapeOutline(val paths: List<ShapePath>) {

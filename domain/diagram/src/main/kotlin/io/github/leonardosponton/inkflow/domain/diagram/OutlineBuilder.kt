@@ -4,8 +4,8 @@ package io.github.leonardosponton.inkflow.domain.diagram
 class OutlineBuilder {
     private val paths = mutableListOf<ShapePath>()
 
-    fun path(fill: PathFill = PathFill.FILL, stroked: Boolean = true, block: PathBuilder.() -> Unit) {
-        paths += ShapePath(PathBuilder().apply(block).ops, fill, stroked)
+    fun path(fill: PathFill = PathFill.FILL, stroked: Boolean = true, dashed: Boolean = false, block: PathBuilder.() -> Unit) {
+        paths += ShapePath(PathBuilder().apply(block).ops, fill, stroked, dashed)
     }
 
     /** Closed polygon through fractional points `(fx, fy)`. */
@@ -19,12 +19,15 @@ class OutlineBuilder {
         points.forEachIndexed { i, a -> if (i == 0) move(a) else line(a) }
     }
 
-    fun line(from: Anchor, to: Anchor) = polyline(from, to)
+    fun line(from: Anchor, to: Anchor, dashed: Boolean = false) = path(PathFill.NONE, dashed = dashed) {
+        move(from)
+        line(to)
+    }
 
     fun rect(fill: PathFill = PathFill.FILL) = polygon(0.0 to 0.0, 1.0 to 0.0, 1.0 to 1.0, 0.0 to 1.0, fill = fill)
 
-    fun oval(topLeft: Anchor = at(0.0, 0.0), bottomRight: Anchor = at(1.0, 1.0), fill: PathFill = PathFill.FILL) =
-        path(fill) { ops += PathOp.Oval(topLeft, bottomRight) }
+    fun oval(topLeft: Anchor = at(0.0, 0.0), bottomRight: Anchor = at(1.0, 1.0), fill: PathFill = PathFill.FILL, dashed: Boolean = false) =
+        path(fill, dashed = dashed) { ops += PathOp.Oval(topLeft, bottomRight) }
 
     fun build() = ShapeOutline(paths.toList())
 }

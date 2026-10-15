@@ -28,6 +28,7 @@ class ConnectorRouter(
     fun reroute(connector: Connector, scene: Scene): Connector = connector.copy(route = route(connector, scene))
 
     fun route(c: Connector, scene: Scene): List<Vec2> {
+        selfLoop(c, scene)?.let { return it }
         val srcRef = referencePoint(c.target, scene, c.waypoints.firstOrNull())
         val tgtRef = referencePoint(c.source, scene, c.waypoints.lastOrNull())
         val src = resolve(c.source, scene, srcRef)
@@ -37,6 +38,18 @@ class ConnectorRouter(
             Routing.ORTHOGONAL -> orthogonalRoute(c, src, tgt, scene)
             Routing.CURVED -> curvedRoute(src, tgt, c.waypoints)
         }
+    }
+
+    /** A connector from a node to itself (self message, reflexive association) loops out on the right. */
+    private fun selfLoop(c: Connector, scene: Scene): List<Vec2>? {
+        val s = c.source as? Endpoint.Attached ?: return null
+        val t = c.target as? Endpoint.Attached ?: return null
+        if (s.node != t.node || c.waypoints.isNotEmpty()) return null
+        val f = (scene[s.node] as? ShapeNode)?.frame ?: return null
+        val out = f.right + LOOP_REACH
+        val y1 = f.top + f.height * LOOP_START
+        val y2 = f.top + f.height * LOOP_END
+        return listOf(Vec2(f.right, y1), Vec2(out, y1), Vec2(out, y2), Vec2(f.right, y2))
     }
 
     /** Where an endpoint sits and which way it faces. [toward] is used for floating ends. */
@@ -135,6 +148,9 @@ class ConnectorRouter(
         private const val OBSTACLE_SEARCH = 240.0
         private const val MAX_OBSTACLES = 60
         private const val MIN_HANDLE = 30.0
+        private const val LOOP_REACH = 40.0
+        private const val LOOP_START = 0.3
+        private const val LOOP_END = 0.7
 
         /** Polyline approximation of a connector's route (curves flattened) for hit testing and labels. */
         fun flatten(c: Connector): List<Vec2> {

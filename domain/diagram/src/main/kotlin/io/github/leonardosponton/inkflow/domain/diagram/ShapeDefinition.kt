@@ -64,7 +64,11 @@ data class ShapeDefinition(
     val isContainer: Boolean = false,
     /** Container header height in world units; the label sits there. */
     val headerHeight: Double = 0.0,
+    /** Header is a strip on the left (horizontal swimlanes) instead of on top; [headerHeight] is its width. */
+    val headerOnLeft: Boolean = false,
     val keepAspectRatio: Boolean = false,
+    /** Underline the label (key attributes in Chen notation). */
+    val labelUnderline: Boolean = false,
     val minSize: Size = Size(MIN_SIDE, MIN_SIDE),
     val keywords: List<String> = emptyList(),
     /** Creates the initial content for a new node of this type. */

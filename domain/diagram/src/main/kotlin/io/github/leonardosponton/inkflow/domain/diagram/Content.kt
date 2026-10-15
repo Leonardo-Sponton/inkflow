@@ -69,6 +69,8 @@ data class TextBlock(
     val underline: Boolean = false,
     val verticalCenter: Boolean = true,
     val wrap: Boolean = true,
+    /** Counter-clockwise rotation (vertical swimlane headers use 90). [rect] is the unrotated box. */
+    val rotation: Int = 0,
 )
 
 /** Everything inside a node except its outline: text and separator lines. */
@@ -105,6 +107,11 @@ object PlainLabelLayouter : ContentLayouter {
     ): NodeLayout {
         val text = content.summary
         if (text.isEmpty()) return NodeLayout.Empty
+        val bold = style.bold || definition.isContainer
+        if (definition.isContainer && definition.headerOnLeft) {
+            val strip = Rect(frame.left, frame.top + PAD, frame.left + definition.headerHeight, frame.bottom - PAD)
+            return NodeLayout(listOf(TextBlock(strip, text, style.fontSize, TextAlign.CENTER, bold, style.italic, rotation = VERTICAL)))
+        }
         val area = if (definition.isContainer && definition.headerHeight > 0) {
             Rect(frame.left + PAD, frame.top, frame.right - PAD, frame.top + definition.headerHeight)
         } else {
@@ -112,10 +119,19 @@ object PlainLabelLayouter : ContentLayouter {
         }
         return NodeLayout(
             texts = listOf(
-                TextBlock(area, text, style.fontSize, style.textAlign, bold = style.bold || definition.isContainer, italic = style.italic),
+                TextBlock(
+                    area,
+                    text,
+                    style.fontSize,
+                    style.textAlign,
+                    bold = bold,
+                    italic = style.italic,
+                    underline = definition.labelUnderline,
+                ),
             ),
         )
     }
 
     private const val PAD = 8.0
+    private const val VERTICAL = 90
 }

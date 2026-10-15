@@ -92,7 +92,7 @@ class SceneDrawer(
                 PathFill.STROKE_COLOR -> fillPath(canvas, p, pass.palette.adapt(style.stroke), alpha)
                 PathFill.NONE -> Unit
             }
-            if (sp.stroked) strokePath(canvas, p, style, pass, alpha)
+            if (sp.stroked) strokePath(canvas, p, if (sp.dashed) style.copy(dash = DashPattern.DASHED) else style, pass, alpha)
         }
         canvas.restore()
         val layout = catalog.layouts.layouterFor(node.content).layout(node.content, def, f, style, metrics)
@@ -131,6 +131,10 @@ class SceneDrawer(
     fun drawTextBlock(canvas: Canvas, block: TextBlock, color: Int, pass: Pass) {
         if (block.fontSize * pass.zoom < MIN_TEXT_PX || block.text.isEmpty()) return
         val r = block.rect
+        if (block.rotation != 0) {
+            drawRotated(canvas, block, color, pass)
+            return
+        }
         val layout = metrics.layout(
             block.text,
             r.width.toInt().coerceAtLeast(1),
@@ -146,6 +150,17 @@ class SceneDrawer(
         val dy = if (block.verticalCenter) ((r.height - layout.height) / 2).coerceAtLeast(0.0) else 0.0
         canvas.translate(r.left.toFloat(), (r.top + dy).toFloat())
         layout.draw(canvas)
+        canvas.restore()
+    }
+
+    /** Draws a 90°-rotated block: lay out along the rect's height, then rotate around its center. */
+    private fun drawRotated(canvas: Canvas, block: TextBlock, color: Int, pass: Pass) {
+        val r = block.rect
+        val c = r.center
+        val swapped = Rect.fromCenter(c, Size(r.height, r.width))
+        canvas.save()
+        canvas.rotate(-block.rotation.toFloat(), c.x.toFloat(), c.y.toFloat())
+        drawTextBlock(canvas, block.copy(rect = swapped, rotation = 0), color, pass)
         canvas.restore()
     }
 
