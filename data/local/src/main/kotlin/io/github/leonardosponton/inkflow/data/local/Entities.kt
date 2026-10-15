@@ -4,6 +4,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import kotlinx.serialization.Serializable
 
 @Entity(tableName = "projects")
 data class ProjectEntity(
@@ -20,6 +21,7 @@ data class ProjectEntity(
     foreignKeys = [ForeignKey(ProjectEntity::class, ["id"], ["projectId"], onDelete = ForeignKey.CASCADE)],
     indices = [Index("projectId")],
 )
+@Serializable
 data class TabEntity(
     @PrimaryKey val id: String,
     val projectId: String,

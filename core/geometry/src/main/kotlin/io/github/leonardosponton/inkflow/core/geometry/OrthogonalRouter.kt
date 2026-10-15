@@ -30,7 +30,24 @@ enum class Side(val dx: Double, val dy: Double) {
     }
 }
 
-data class RouteEnd(val point: Vec2, val side: Side?)
+/**
+ * One end of a route. [frame] is the node's bounding box when the end sits on a node: the route
+ * first leaves that box straight along [side] (needed for diamonds and ellipses, whose outline
+ * lies inside the box).
+ */
+data class RouteEnd(val point: Vec2, val side: Side?, val frame: Rect? = null) {
+    /** Point where the route crosses the frame edge along [side] (or [point] itself). */
+    fun exit(): Vec2 {
+        val f = frame ?: return point
+        return when (side) {
+            Side.NORTH -> Vec2(point.x, f.top)
+            Side.SOUTH -> Vec2(point.x, f.bottom)
+            Side.EAST -> Vec2(f.right, point.y)
+            Side.WEST -> Vec2(f.left, point.y)
+            null -> point
+        }
+    }
+}
 
 /**
  * Obstacle-avoiding Manhattan router.
@@ -48,12 +65,13 @@ class OrthogonalRouter(
         val end = stub(target)
         val blocks = obstacles.map { it.inflate(margin - EPS * 10) }
         val path = search(start, end, blocks) ?: elbow(start, end, source.side)
-        return removeCollinear(listOf(source.point) + path + listOf(target.point))
+        return removeCollinear(listOf(source.point, source.exit()) + path + listOf(target.exit(), target.point))
     }
 
     private fun stub(end: RouteEnd): Vec2 {
         val side = end.side ?: return end.point
-        return Vec2(end.point.x + side.dx * margin, end.point.y + side.dy * margin)
+        val p = end.exit()
+        return Vec2(p.x + side.dx * margin, p.y + side.dy * margin)
     }
 
     private fun elbow(a: Vec2, b: Vec2, side: Side?): List<Vec2> {

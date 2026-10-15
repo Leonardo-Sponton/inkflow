@@ -57,3 +57,20 @@ class OrthogonalRouterTest {
         assertEquals(3, path.size)
     }
 }
+
+class RouteEndTest {
+    @Test
+    fun `routes leave a diamond through its bounding box`() {
+        val diamond = Rect(0.0, 0.0, 100.0, 100.0)
+        val wall = Rect(-20.0, -120.0, 120.0, -60.0)
+        val start = RouteEnd(Vec2(25.0, 25.0), Side.NORTH, diamond)
+        assertEquals(Vec2(25.0, 0.0), start.exit())
+        val path = OrthogonalRouter(margin = 10.0).route(start, RouteEnd(Vec2(50.0, -300.0), Side.SOUTH), listOf(diamond, wall))
+        path.zipWithNext().forEach { (a, b) -> assertFalse(segmentCrossesRectInterior(a, b, wall)) }
+        assertEquals(Vec2(25.0, 25.0), path.first())
+        assertEquals(Vec2(25.0, 0.0), RouteEnd(Vec2(25.0, 0.0), null, diamond).exit())
+        assertEquals(Vec2(100.0, 40.0), RouteEnd(Vec2(60.0, 40.0), Side.EAST, diamond).exit())
+        assertEquals(Vec2(0.0, 40.0), RouteEnd(Vec2(60.0, 40.0), Side.WEST, diamond).exit())
+        assertEquals(Vec2(60.0, 100.0), RouteEnd(Vec2(60.0, 40.0), Side.SOUTH, diamond).exit())
+    }
+}

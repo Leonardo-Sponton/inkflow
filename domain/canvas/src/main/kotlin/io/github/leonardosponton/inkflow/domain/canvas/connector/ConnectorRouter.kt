@@ -66,9 +66,9 @@ class ConnectorRouter(
     private fun resolveOnNode(node: ShapeNode, portId: String?, toward: Vec2): RouteEnd {
         val def = shapes.resolve(node.shape)
         val port = portId?.let { id -> def.ports.firstOrNull { it.id == id } }
-        if (port != null) return RouteEnd(port.position(node.frame), port.side)
+        if (port != null) return RouteEnd(port.position(node.frame), port.side, node.frame)
         val p = boundaryPoint(node.frame, def.perimeter, toward)
-        return RouteEnd(p, Side.facing(node.frame, p))
+        return RouteEnd(p, Side.facing(node.frame, p), node.frame)
     }
 
     private fun boundaryPoint(frame: Rect, perimeter: Perimeter, toward: Vec2): Vec2 = when (perimeter) {

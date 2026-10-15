@@ -3,6 +3,6 @@ plugins {
 }
 
 dependencies {
-    api(project(":domain:project"))
-    api(project(":domain:canvas"))
+    api(project(":core:model"))
+    api(project(":core:common"))
 }

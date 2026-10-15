@@ -17,7 +17,7 @@ object TableLayouter : ContentLayouter {
     private const val PAD_X = 10.0
     private const val PAD_Y = 6.0
     private const val ROW_SCALE = 0.875
-    private const val BADGE_W = 34.0
+    private const val BADGE_W = 48.0
     private const val MIN_WIDTH = 200.0
     private const val GUTTER = 16.0
 

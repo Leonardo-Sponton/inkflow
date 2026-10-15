@@ -70,4 +70,37 @@
     <string name="labels">Labels</string>
     <string name="change_shape">Change shape</string>
     <string name="label">Label</string>
+    <string name="name">Name</string>
+    <string name="type">Type</string>
+    <string name="stereotype">Stereotype</string>
+    <string name="literals">Literals</string>
+    <string name="add_literal">Add literal</string>
+    <string name="attributes">Attributes</string>
+    <string name="operations">Operations</string>
+    <string name="add_attribute">Add attribute</string>
+    <string name="add_operation">Add operation</string>
+    <string name="member_hint">Type members as in UML: “- name: Type = default” or “+ op(a: Int): Bool”. Visibility: + public, - private, # protected, ~ package.</string>
+    <string name="table_name">Table name</string>
+    <string name="columns">Columns</string>
+    <string name="add_column">Add column</string>
+    <string name="indexes">Indexes</string>
+    <string name="add_index">Add index</string>
+    <string name="index_columns">Columns (comma separated)</string>
+    <string name="comment">Comment</string>
+    <string name="default_value">Default</string>
+    <string name="uml_relation">UML relationship</string>
+    <string name="event">Event</string>
+    <string name="guard">Guard</string>
+    <string name="action">Action</string>
+    <string name="source_multiplicity">Source multiplicity</string>
+    <string name="target_multiplicity">Target multiplicity</string>
+    <string name="source_role">Source role</string>
+    <string name="target_role">Target role</string>
+    <string name="relationship">Relationship</string>
+    <string name="child_side">Child side (start, holds the foreign key)</string>
+    <string name="parent_side">Parent side (end)</string>
+    <string name="identifying">Identifying (solid line)</string>
+    <string name="participation">Participation</string>
+    <string name="cardinality">Cardinality</string>
+    <string name="total_participation">Total participation</string>
 </resources>

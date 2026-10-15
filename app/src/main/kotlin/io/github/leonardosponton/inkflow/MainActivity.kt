@@ -8,6 +8,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.getValue
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
@@ -25,6 +26,8 @@ import io.github.leonardosponton.inkflow.feature.settings.SettingsScreen
 import io.github.leonardosponton.inkflow.navigation.EditorRoute
 import io.github.leonardosponton.inkflow.navigation.HomeRoute
 import io.github.leonardosponton.inkflow.navigation.SettingsRoute
+import io.github.leonardosponton.inkflow.samples.SampleSeeder
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -32,9 +35,13 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var settingsRepository: SettingsRepository
 
+    @Inject
+    lateinit var seeder: SampleSeeder
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        seedIfRequested()
         setContent {
             val settings by settingsRepository.settings.collectAsStateWithLifecycle(UserSettings())
             val dark = when (settings.themeMode) {
@@ -44,6 +51,24 @@ class MainActivity : ComponentActivity() {
             }
             InkflowTheme(darkTheme = dark, dynamicColor = settings.dynamicColor) { AppNavigation() }
         }
+    }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        seedIfRequested()
+    }
+
+    /** Debug/benchmark builds only: `--es seed all|flowchart|uml|db|shapes|stress`. */
+    private fun seedIfRequested() {
+        val kind = intent?.getStringExtra(EXTRA_SEED) ?: return
+        if (!BuildConfig.DEBUG && BuildConfig.BUILD_TYPE != "benchmark") return
+        intent.removeExtra(EXTRA_SEED)
+        lifecycleScope.launch { seeder.seed(kind) }
+    }
+
+    private companion object {
+        const val EXTRA_SEED = "seed"
     }
 }
 

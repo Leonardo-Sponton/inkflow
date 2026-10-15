@@ -14,6 +14,7 @@ import dagger.hilt.components.SingletonComponent
 import io.github.leonardosponton.inkflow.data.files.FileStore
 import io.github.leonardosponton.inkflow.data.local.InkflowDatabase
 import io.github.leonardosponton.inkflow.domain.canvas.repository.SceneRepository
+import io.github.leonardosponton.inkflow.domain.export.ProjectArchiver
 import io.github.leonardosponton.inkflow.domain.project.AssetStore
 import io.github.leonardosponton.inkflow.domain.project.ProjectRepository
 import io.github.leonardosponton.inkflow.domain.project.SettingsRepository
@@ -37,6 +38,9 @@ abstract class DataBindings {
 
     @Binds
     abstract fun assets(impl: FileAssetStore): AssetStore
+
+    @Binds
+    abstract fun archiver(impl: ZipProjectArchiver): ProjectArchiver
 }
 
 @Module

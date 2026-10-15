@@ -21,6 +21,7 @@ import io.github.leonardosponton.inkflow.domain.canvas.element.CanvasElement
 import io.github.leonardosponton.inkflow.domain.canvas.element.Connector
 import io.github.leonardosponton.inkflow.domain.canvas.element.ImageElement
 import io.github.leonardosponton.inkflow.domain.canvas.element.InkStroke
+import io.github.leonardosponton.inkflow.domain.canvas.element.LabelPosition
 import io.github.leonardosponton.inkflow.domain.canvas.element.Routing
 import io.github.leonardosponton.inkflow.domain.canvas.element.ShapeNode
 import io.github.leonardosponton.inkflow.domain.canvas.element.TextElement
@@ -253,14 +254,16 @@ class SceneDrawer(
         if (c.labels.isEmpty()) return
         val line = ConnectorRouter.flatten(c)
         val size = c.style.fontSize * LABEL_SCALE
-        if (size * pass.zoom < MIN_TEXT_PX) return
+        if (size * pass.zoom < MIN_TEXT_PX || line.size < 2) return
         c.labels.forEach { label ->
-            val at = pointAlongPolyline(line, label.position.fraction)
             val m = metrics.measure(label.text, size, false, null)
+            val at = labelAnchor(c, line, label.position, m)
             val box = Rect.fromCenter(at, Size(m.width + LABEL_PAD * 2, m.height + LABEL_PAD))
-            fill.color = pass.palette.labelBackground
-            scratchRect.set(box.left.toFloat(), box.top.toFloat(), box.right.toFloat(), box.bottom.toFloat())
-            canvas.drawRoundRect(scratchRect, LABEL_PAD.toFloat(), LABEL_PAD.toFloat(), fill)
+            if (label.position == LabelPosition.MIDDLE) {
+                fill.color = pass.palette.labelBackground
+                scratchRect.set(box.left.toFloat(), box.top.toFloat(), box.right.toFloat(), box.bottom.toFloat())
+                canvas.drawRoundRect(scratchRect, LABEL_PAD.toFloat(), LABEL_PAD.toFloat(), fill)
+            }
             drawTextBlock(
                 canvas,
                 TextBlock(box, label.text, size, TextAlign.CENTER, wrap = false),
@@ -268,6 +271,32 @@ class SceneDrawer(
                 pass,
             )
         }
+    }
+
+    /**
+     * Middle labels sit on the line; start/end labels (multiplicities, roles) sit beside the line,
+     * just past the end marker, so they never cover it.
+     */
+    private fun labelAnchor(c: Connector, line: List<Vec2>, pos: LabelPosition, textSize: Size): Vec2 {
+        if (pos == LabelPosition.MIDDLE) return pointAlongPolyline(line, pos.fraction)
+        val fromStart = pos == LabelPosition.START
+        val pts = if (fromStart) line else line.asReversed()
+        val marker = catalog.markers[if (fromStart) c.startMarker else c.endMarker]
+        val along = (marker?.lineInset ?: 0.0) + END_LABEL_GAP + textSize.width / 2
+        val base = pointAtDistance(pts, along)
+        val dir = (pts[1] - pts[0]).normalized()
+        val normal = Vec2(-dir.y, dir.x)
+        return base + normal * (textSize.height / 2 + END_LABEL_GAP / 2)
+    }
+
+    private fun pointAtDistance(pts: List<Vec2>, distance: Double): Vec2 {
+        var remaining = distance
+        for (i in 0 until pts.lastIndex) {
+            val seg = pts[i].distanceTo(pts[i + 1])
+            if (remaining <= seg) return pts[i].lerp(pts[i + 1], if (seg == 0.0) 0.0 else remaining / seg)
+            remaining -= seg
+        }
+        return pts.last()
     }
 
     // ---- ink / text / images ------------------------------------------------------------------
@@ -334,6 +363,7 @@ class SceneDrawer(
         const val MAX_MARKER_SCALE = 3.0
         const val LABEL_SCALE = 0.85
         const val LABEL_PAD = 4.0
+        const val END_LABEL_GAP = 8.0
         const val TEXT_PAD = 8.0
         const val SHADOW = 0x22000000
         const val SHADOW_OFFSET = 3f
