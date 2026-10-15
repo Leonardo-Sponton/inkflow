@@ -8,7 +8,9 @@ import android.os.Build
 import android.os.SystemClock
 import android.view.MotionEvent
 import android.view.ViewConfiguration
+import android.view.accessibility.AccessibilityManager
 import android.widget.FrameLayout
+import androidx.core.view.ViewCompat
 import androidx.ink.authoring.InProgressStrokeId
 import androidx.ink.authoring.InProgressStrokesFinishedListener
 import androidx.ink.authoring.InProgressStrokesView
@@ -55,6 +57,11 @@ interface CanvasHost {
 class InkCanvasView(context: Context, private val drawer: SceneDrawer) : FrameLayout(context) {
     var host: CanvasHost? = null
 
+    /** Element descriptions and selection for TalkBack. */
+    var accessibility: CanvasAccessibility? = null
+
+    private val a11y = CanvasAccessibilityHelper(this)
+
     private val wet = InProgressStrokesView(context)
     private val grid = GridDrawer()
     private val overlay = OverlayDrawer()
@@ -80,6 +87,7 @@ class InkCanvasView(context: Context, private val drawer: SceneDrawer) : FrameLa
         set(value) {
             field = value
             value?.let { updateMatrices(it) }
+            if (a11yEnabled()) a11y.update(value, viewport())
             invalidate()
         }
 
@@ -93,6 +101,7 @@ class InkCanvasView(context: Context, private val drawer: SceneDrawer) : FrameLa
         )
         isFocusable = true
         contentDescription = context.getString(R.string.canvas_description)
+        ViewCompat.setAccessibilityDelegate(this, a11y)
     }
 
     private fun viewport() = Size(width.toDouble(), height.toDouble())
@@ -178,6 +187,12 @@ class InkCanvasView(context: Context, private val drawer: SceneDrawer) : FrameLa
         scheduleTimer()
         return true
     }
+
+    private fun a11yEnabled(): Boolean =
+        (context.getSystemService(Context.ACCESSIBILITY_SERVICE) as? AccessibilityManager)?.isTouchExplorationEnabled == true
+
+    override fun dispatchHoverEvent(event: MotionEvent): Boolean =
+        (a11yEnabled() && a11y.dispatchHoverEvent(event)) || super.dispatchHoverEvent(event)
 
     override fun onHoverEvent(event: MotionEvent): Boolean {
         val action = when (event.actionMasked) {
@@ -307,7 +322,7 @@ class InkCanvasView(context: Context, private val drawer: SceneDrawer) : FrameLa
             pointers = pointers,
             timeMs = time,
             stylusButton =
-                (e.buttonState and MotionEvent.BUTTON_STYLUS_PRIMARY) != 0 || (e.buttonState and MotionEvent.BUTTON_SECONDARY) != 0,
+            (e.buttonState and MotionEvent.BUTTON_STYLUS_PRIMARY) != 0 || (e.buttonState and MotionEvent.BUTTON_SECONDARY) != 0,
             canceled = canceled,
         )
     }

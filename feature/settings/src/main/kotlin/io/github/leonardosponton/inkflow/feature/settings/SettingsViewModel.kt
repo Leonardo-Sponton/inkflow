@@ -13,16 +13,16 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SettingsViewModel
-    @Inject
-    constructor(private val repository: SettingsRepository) : ViewModel() {
-        val settings: StateFlow<UserSettings> =
-            repository.settings.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT), UserSettings())
+@Inject
+constructor(private val repository: SettingsRepository) : ViewModel() {
+    val settings: StateFlow<UserSettings> =
+        repository.settings.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT), UserSettings())
 
-        fun update(transform: (UserSettings) -> UserSettings) {
-            viewModelScope.launch { repository.update(transform) }
-        }
-
-        private companion object {
-            const val STOP_TIMEOUT = 5_000L
-        }
+    fun update(transform: (UserSettings) -> UserSettings) {
+        viewModelScope.launch { repository.update(transform) }
     }
+
+    private companion object {
+        const val STOP_TIMEOUT = 5_000L
+    }
+}

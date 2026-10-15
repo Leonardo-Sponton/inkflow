@@ -123,8 +123,8 @@ private fun MemberList(key: String, members: List<UmlMember>, operation: Boolean
             IconButton(onClick = {
                 update(
                     members.filterIndexed {
-                        j,
-                        _,
+                            j,
+                            _,
                         ->
                         j != i
                     },
@@ -159,8 +159,8 @@ private fun StringList(key: String, items: List<String>, addLabel: String, updat
             IconButton(onClick = {
                 update(
                     items.filterIndexed {
-                        j,
-                        _,
+                            j,
+                            _,
                         ->
                         j != i
                     },
@@ -186,7 +186,7 @@ private fun TableEditor(id: ElementId, t: DbTableContent, update: (DbTableConten
                     indexes = t.indexes.map { ix ->
                         ix.copy(
                             columnIds =
-                                ix.columnIds - c.id,
+                            ix.columnIds - c.id,
                         )
                     },
                 ),
@@ -232,8 +232,8 @@ private fun TableEditor(id: ElementId, t: DbTableContent, update: (DbTableConten
                 update(
                     t.copy(
                         indexes = t.indexes.filterIndexed {
-                            j,
-                            _,
+                                j,
+                                _,
                             ->
                             j != i
                         },

@@ -37,40 +37,40 @@ internal object ElementMapper {
 
 @Singleton
 class RoomSceneRepository
-    @Inject
-    constructor(
-        private val db: InkflowDatabase,
-        private val json: SceneJson,
-        private val logger: Logger,
-        @param:IoDispatcher private val io: CoroutineDispatcher,
-    ) : SceneRepository {
-        override suspend fun load(tab: TabId): Scene = withContext(io) {
-            val decoded = db.elements().forTab(tab.value).mapNotNull { row ->
-                try {
-                    json.decodeElement(row.payload)
-                } catch (e: SerializationException) {
-                    logger.warn(TAG, "Skipping unreadable element ${row.id}", e)
-                    null
-                }
+@Inject
+constructor(
+    private val db: InkflowDatabase,
+    private val json: SceneJson,
+    private val logger: Logger,
+    @param:IoDispatcher private val io: CoroutineDispatcher,
+) : SceneRepository {
+    override suspend fun load(tab: TabId): Scene = withContext(io) {
+        val decoded = db.elements().forTab(tab.value).mapNotNull { row ->
+            try {
+                json.decodeElement(row.payload)
+            } catch (e: SerializationException) {
+                logger.warn(TAG, "Skipping unreadable element ${row.id}", e)
+                null
             }
-            Scene.of(decoded)
         }
-
-        override suspend fun applyChange(tab: TabId, change: SceneChange) = withContext(io) {
-            val upserts = change.after.values.filterNotNull().map { ElementMapper.toEntity(tab.value, it, json) }
-            val deletes = change.after.filterValues { it == null }.keys.map { it.value }
-            db.withTransaction { db.elements().apply(upserts, deletes) }
-        }
-
-        override suspend fun loadUndoHistory(tab: TabId): List<SceneChange> = withContext(io) {
-            db.undo().forTab(tab.value).mapNotNull { runCatching { json.decodeChange(it.payload) }.getOrNull() }
-        }
-
-        override suspend fun saveUndoHistory(tab: TabId, entries: List<SceneChange>) = withContext(io) {
-            db.undo().replace(tab.value, entries.mapIndexed { i, c -> UndoEntryEntity(tab.value, i, json.encodeChange(c)) })
-        }
-
-        private companion object {
-            const val TAG = "SceneRepository"
-        }
+        Scene.of(decoded)
     }
+
+    override suspend fun applyChange(tab: TabId, change: SceneChange) = withContext(io) {
+        val upserts = change.after.values.filterNotNull().map { ElementMapper.toEntity(tab.value, it, json) }
+        val deletes = change.after.filterValues { it == null }.keys.map { it.value }
+        db.withTransaction { db.elements().apply(upserts, deletes) }
+    }
+
+    override suspend fun loadUndoHistory(tab: TabId): List<SceneChange> = withContext(io) {
+        db.undo().forTab(tab.value).mapNotNull { runCatching { json.decodeChange(it.payload) }.getOrNull() }
+    }
+
+    override suspend fun saveUndoHistory(tab: TabId, entries: List<SceneChange>) = withContext(io) {
+        db.undo().replace(tab.value, entries.mapIndexed { i, c -> UndoEntryEntity(tab.value, i, json.encodeChange(c)) })
+    }
+
+    private companion object {
+        const val TAG = "SceneRepository"
+    }
+}

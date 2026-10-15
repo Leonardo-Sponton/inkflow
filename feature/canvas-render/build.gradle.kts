@@ -14,5 +14,6 @@ dependencies {
     api(libs.androidx.ink.strokes)
     implementation(libs.androidx.graphics.core)
     implementation(libs.androidx.input.motionprediction)
+    implementation(libs.androidx.customview)
     implementation(libs.kotlinx.coroutines.android)
 }

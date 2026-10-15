@@ -59,55 +59,55 @@ sealed interface HomeIntent {
 
 @HiltViewModel
 class HomeViewModel
-    @Inject
-    constructor(
-        private val projects: ProjectRepository,
-        private val createProject: CreateProject,
-        private val archiver: ProjectArchiver,
-    ) : ViewModel() {
-        private val query = MutableStateFlow(ProjectQuery())
-        private val message = MutableStateFlow<String?>(null)
-        private val openEvents = Channel<ProjectId>(Channel.BUFFERED)
+@Inject
+constructor(
+    private val projects: ProjectRepository,
+    private val createProject: CreateProject,
+    private val archiver: ProjectArchiver,
+) : ViewModel() {
+    private val query = MutableStateFlow(ProjectQuery())
+    private val message = MutableStateFlow<String?>(null)
+    private val openEvents = Channel<ProjectId>(Channel.BUFFERED)
 
-        /** Emits the project to open right after it was created. */
-        val opened = openEvents.receiveAsFlow()
+    /** Emits the project to open right after it was created. */
+    val opened = openEvents.receiveAsFlow()
 
-        val state: StateFlow<HomeState> = combine(projects.observeProjects(), query, message) { all, q, m ->
-            HomeState(loading = false, projects = all.query(q), query = q, totalCount = all.size, message = m)
-        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT), HomeState())
+    val state: StateFlow<HomeState> = combine(projects.observeProjects(), query, message) { all, q, m ->
+        HomeState(loading = false, projects = all.query(q), query = q, totalCount = all.size, message = m)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT), HomeState())
 
-        fun onIntent(intent: HomeIntent) {
-            when (intent) {
-                is HomeIntent.Search -> query.update { it.copy(search = intent.text) }
-                is HomeIntent.Sort -> query.update { it.copy(sort = intent.sort) }
-                is HomeIntent.FavoritesOnly -> query.update { it.copy(favoritesOnly = intent.enabled) }
-                is HomeIntent.Create -> viewModelScope.launch { openEvents.send(createProject(profile = intent.profile)) }
-                is HomeIntent.Rename -> viewModelScope.launch {
-                    projects.renameProject(intent.id, Naming.sanitize(intent.name, Naming.DEFAULT_PROJECT))
-                }
-                is HomeIntent.ToggleFavorite -> viewModelScope.launch { projects.setFavorite(intent.project.id, !intent.project.favorite) }
-                is HomeIntent.Delete -> viewModelScope.launch { projects.deleteProject(intent.id) }
-                is HomeIntent.Import -> import(intent.open)
-                HomeIntent.DismissMessage -> message.value = null
+    fun onIntent(intent: HomeIntent) {
+        when (intent) {
+            is HomeIntent.Search -> query.update { it.copy(search = intent.text) }
+            is HomeIntent.Sort -> query.update { it.copy(sort = intent.sort) }
+            is HomeIntent.FavoritesOnly -> query.update { it.copy(favoritesOnly = intent.enabled) }
+            is HomeIntent.Create -> viewModelScope.launch { openEvents.send(createProject(profile = intent.profile)) }
+            is HomeIntent.Rename -> viewModelScope.launch {
+                projects.renameProject(intent.id, Naming.sanitize(intent.name, Naming.DEFAULT_PROJECT))
             }
-        }
-
-        private fun import(open: () -> InputStream?) {
-            viewModelScope.launch {
-                val result = withContext(Dispatchers.IO) { open()?.use { archiver.import(it) } }
-                when (result) {
-                    is Outcome.Ok -> openEvents.send(result.value)
-                    is Outcome.Err -> message.value = when (val e = result.error) {
-                        ArchiveError.NotAnInkflowFile -> "This file is not an Inkflow project."
-                        is ArchiveError.UnsupportedVersion -> "This project was saved by a newer Inkflow (format ${e.version})."
-                        is ArchiveError.Corrupt -> "The project file is damaged: ${e.reason}"
-                    }
-                    null -> message.value = "Could not open the file."
-                }
-            }
-        }
-
-        private companion object {
-            const val STOP_TIMEOUT = 5_000L
+            is HomeIntent.ToggleFavorite -> viewModelScope.launch { projects.setFavorite(intent.project.id, !intent.project.favorite) }
+            is HomeIntent.Delete -> viewModelScope.launch { projects.deleteProject(intent.id) }
+            is HomeIntent.Import -> import(intent.open)
+            HomeIntent.DismissMessage -> message.value = null
         }
     }
+
+    private fun import(open: () -> InputStream?) {
+        viewModelScope.launch {
+            val result = withContext(Dispatchers.IO) { open()?.use { archiver.import(it) } }
+            when (result) {
+                is Outcome.Ok -> openEvents.send(result.value)
+                is Outcome.Err -> message.value = when (val e = result.error) {
+                    ArchiveError.NotAnInkflowFile -> "This file is not an Inkflow project."
+                    is ArchiveError.UnsupportedVersion -> "This project was saved by a newer Inkflow (format ${e.version})."
+                    is ArchiveError.Corrupt -> "The project file is damaged: ${e.reason}"
+                }
+                null -> message.value = "Could not open the file."
+            }
+        }
+    }
+
+    private companion object {
+        const val STOP_TIMEOUT = 5_000L
+    }
+}

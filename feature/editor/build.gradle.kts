@@ -16,3 +16,7 @@ dependencies {
     implementation(libs.compose.material3.adaptive)
     implementation(libs.compose.material3.adaptive.layout)
 }
+
+dependencies {
+    testImplementation(libs.junit4)
+}

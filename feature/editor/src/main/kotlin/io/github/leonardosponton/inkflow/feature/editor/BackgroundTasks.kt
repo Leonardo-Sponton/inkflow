@@ -4,6 +4,7 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -40,6 +41,15 @@ internal class BackgroundTasks(private val vm: EditorViewModel) {
             delay(VALIDATION_MS)
             val issues = withContext(Dispatchers.Default) { vm.catalog.validate(scene) }
             vm.issuesChanged(issues)
+        }
+    }
+
+    /** Projects created by import or seeding have no gallery thumbnail yet. */
+    fun ensureThumbnail() {
+        if (!isFirstTab() || vm.session.scene.size == 0) return
+        vm.viewModelScope.launch {
+            val summary = vm.projects.observeProjects().first().firstOrNull { it.id == vm.projectId }
+            if (summary != null && summary.thumbnailPath == null) renderThumbnail()
         }
     }
 

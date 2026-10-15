@@ -24,33 +24,33 @@ object Naming {
 }
 
 class CreateProject
-    @Inject
-    constructor(private val projects: ProjectRepository) {
-        suspend operator fun invoke(name: String? = null, profile: DiagramProfile = DiagramProfile.FREEFORM): ProjectId {
-            val existing = projects.observeProjects().first().map { it.name }
-            val finalName = name?.let { Naming.sanitize(it, Naming.DEFAULT_PROJECT) } ?: Naming.nextName(Naming.DEFAULT_PROJECT, existing)
-            return projects.createProject(finalName, Naming.DEFAULT_TAB, profile)
-        }
+@Inject
+constructor(private val projects: ProjectRepository) {
+    suspend operator fun invoke(name: String? = null, profile: DiagramProfile = DiagramProfile.FREEFORM): ProjectId {
+        val existing = projects.observeProjects().first().map { it.name }
+        val finalName = name?.let { Naming.sanitize(it, Naming.DEFAULT_PROJECT) } ?: Naming.nextName(Naming.DEFAULT_PROJECT, existing)
+        return projects.createProject(finalName, Naming.DEFAULT_TAB, profile)
     }
+}
 
 class AddTab
-    @Inject
-    constructor(private val projects: ProjectRepository, private val tabs: TabRepository) {
-        suspend operator fun invoke(projectId: ProjectId, profile: DiagramProfile = DiagramProfile.FREEFORM): TabId {
-            val existing = projects.observeProject(projectId).first()?.tabs?.map { it.title }.orEmpty()
-            return tabs.addTab(projectId, Naming.nextName(Naming.DEFAULT_TAB, existing), profile)
-        }
+@Inject
+constructor(private val projects: ProjectRepository, private val tabs: TabRepository) {
+    suspend operator fun invoke(projectId: ProjectId, profile: DiagramProfile = DiagramProfile.FREEFORM): TabId {
+        val existing = projects.observeProject(projectId).first()?.tabs?.map { it.title }.orEmpty()
+        return tabs.addTab(projectId, Naming.nextName(Naming.DEFAULT_TAB, existing), profile)
     }
+}
 
 /** Moves the tab at [from] to [to] and persists the full order. */
 class MoveTab
-    @Inject
-    constructor(private val projects: ProjectRepository, private val tabRepo: TabRepository) {
-        suspend operator fun invoke(projectId: ProjectId, from: Int, to: Int) {
-            val tabs = projects.observeProject(projectId).first()?.tabs ?: return
-            if (from !in tabs.indices || to !in tabs.indices || from == to) return
-            val order = tabs.map { it.id }.toMutableList()
-            order.add(to, order.removeAt(from))
-            tabRepo.reorderTabs(projectId, order)
-        }
+@Inject
+constructor(private val projects: ProjectRepository, private val tabRepo: TabRepository) {
+    suspend operator fun invoke(projectId: ProjectId, from: Int, to: Int) {
+        val tabs = projects.observeProject(projectId).first()?.tabs ?: return
+        if (from !in tabs.indices || to !in tabs.indices || from == to) return
+        val order = tabs.map { it.id }.toMutableList()
+        order.add(to, order.removeAt(from))
+        tabRepo.reorderTabs(projectId, order)
     }
+}

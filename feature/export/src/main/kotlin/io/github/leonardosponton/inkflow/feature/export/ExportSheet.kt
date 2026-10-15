@@ -55,61 +55,61 @@ data class ExportUiState(val options: ExportOptions = ExportOptions(), val busy:
 
 @HiltViewModel
 class ExportViewModel
-    @Inject
-    constructor(private val service: ExportService) : ViewModel() {
-        private val _state = MutableStateFlow(ExportUiState())
-        val state = _state.asStateFlow()
+@Inject
+constructor(private val service: ExportService) : ViewModel() {
+    private val _state = MutableStateFlow(ExportUiState())
+    val state = _state.asStateFlow()
 
-        fun update(f: (ExportOptions) -> ExportOptions) = _state.update { it.copy(options = f(it.options), message = null) }
+    fun update(f: (ExportOptions) -> ExportOptions) = _state.update { it.copy(options = f(it.options), message = null) }
 
-        suspend fun fileName(target: ExportTarget) = service.fileName(target, _state.value.options.format)
+    suspend fun fileName(target: ExportTarget) = service.fileName(target, _state.value.options.format)
 
-        /** Writes to a document the user picked with the system file picker (SAF). */
-        fun saveTo(context: Context, target: ExportTarget, uri: Uri) = run(context) {
-            context.contentResolver.openOutputStream(uri)?.use { service.export(target, _state.value.options, it) }
-                ?: ExportResult.Failed("Cannot write file")
-        }
+    /** Writes to a document the user picked with the system file picker (SAF). */
+    fun saveTo(context: Context, target: ExportTarget, uri: Uri) = run(context) {
+        context.contentResolver.openOutputStream(uri)?.use { service.export(target, _state.value.options, it) }
+            ?: ExportResult.Failed("Cannot write file")
+    }
 
-        /** Writes to app cache and opens the Android share sheet (no app-side networking). */
-        fun share(context: Context, target: ExportTarget) = run(context) {
-            val dir = File(context.cacheDir, SHARE_DIR).apply { mkdirs() }
-            dir.listFiles()?.forEach { it.delete() }
-            val file = File(dir, service.fileName(target, _state.value.options.format))
-            val result = file.outputStream().use { service.export(target, _state.value.options, it) }
-            if (result is ExportResult.Done) {
-                val uri = FileProvider.getUriForFile(context, context.packageName + AUTHORITY_SUFFIX, file)
-                val send = Intent(Intent.ACTION_SEND)
-                    .setType(_state.value.options.format.mimeType)
-                    .putExtra(Intent.EXTRA_STREAM, uri)
-                    .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                withContext(Dispatchers.Main) {
-                    context.startActivity(Intent.createChooser(send, null).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-                }
-            }
-            result
-        }
-
-        private fun run(context: Context, block: suspend () -> ExportResult) {
-            _state.update { it.copy(busy = true, message = null) }
-            viewModelScope.launch {
-                val result = withContext(Dispatchers.IO) { block() }
-                _state.update {
-                    it.copy(
-                        busy = false,
-                        message = when (result) {
-                            ExportResult.Done -> context.getString(R.string.export_done)
-                            is ExportResult.Failed -> context.getString(R.string.export_failed, result.message)
-                        },
-                    )
-                }
+    /** Writes to app cache and opens the Android share sheet (no app-side networking). */
+    fun share(context: Context, target: ExportTarget) = run(context) {
+        val dir = File(context.cacheDir, SHARE_DIR).apply { mkdirs() }
+        dir.listFiles()?.forEach { it.delete() }
+        val file = File(dir, service.fileName(target, _state.value.options.format))
+        val result = file.outputStream().use { service.export(target, _state.value.options, it) }
+        if (result is ExportResult.Done) {
+            val uri = FileProvider.getUriForFile(context, context.packageName + AUTHORITY_SUFFIX, file)
+            val send = Intent(Intent.ACTION_SEND)
+                .setType(_state.value.options.format.mimeType)
+                .putExtra(Intent.EXTRA_STREAM, uri)
+                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            withContext(Dispatchers.Main) {
+                context.startActivity(Intent.createChooser(send, null).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             }
         }
+        result
+    }
 
-        companion object {
-            const val SHARE_DIR = "exports"
-            const val AUTHORITY_SUFFIX = ".exports"
+    private fun run(context: Context, block: suspend () -> ExportResult) {
+        _state.update { it.copy(busy = true, message = null) }
+        viewModelScope.launch {
+            val result = withContext(Dispatchers.IO) { block() }
+            _state.update {
+                it.copy(
+                    busy = false,
+                    message = when (result) {
+                        ExportResult.Done -> context.getString(R.string.export_done)
+                        is ExportResult.Failed -> context.getString(R.string.export_failed, result.message)
+                    },
+                )
+            }
         }
     }
+
+    companion object {
+        const val SHARE_DIR = "exports"
+        const val AUTHORITY_SUFFIX = ".exports"
+    }
+}
 
 /** Bottom sheet with format, scope and options; saves through SAF or shares. */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)

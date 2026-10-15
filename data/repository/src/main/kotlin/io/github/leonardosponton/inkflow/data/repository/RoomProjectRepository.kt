@@ -36,113 +36,113 @@ import javax.inject.Singleton
 
 @Singleton
 class RoomProjectRepository
-    @Inject
-    constructor(
-        private val db: InkflowDatabase,
-        private val files: FileStore,
-        private val json: SceneJson,
-        private val clock: Clock,
-        private val ids: IdGenerator,
-        @param:IoDispatcher private val io: CoroutineDispatcher,
-    ) : ProjectRepository,
-        TabRepository {
-        private val projects = db.projects()
-        private val tabs = db.tabs()
-        private val elements = db.elements()
+@Inject
+constructor(
+    private val db: InkflowDatabase,
+    private val files: FileStore,
+    private val json: SceneJson,
+    private val clock: Clock,
+    private val ids: IdGenerator,
+    @param:IoDispatcher private val io: CoroutineDispatcher,
+) : ProjectRepository,
+    TabRepository {
+    private val projects = db.projects()
+    private val tabs = db.tabs()
+    private val elements = db.elements()
 
-        override fun observeProjects(): Flow<List<ProjectSummary>> = projects.observeSummaries().map { rows ->
-            rows.map { r ->
-                val thumb = files.thumbnailFile(r.id)
-                ProjectSummary(
-                    id = ProjectId(r.id),
-                    name = r.name,
-                    createdAt = r.createdAt,
-                    updatedAt = r.updatedAt,
-                    favorite = r.favorite,
-                    tabCount = r.tabCount,
-                    thumbnailPath = thumb.absolutePath.takeIf { r.thumbnailVersion > 0 && thumb.exists() },
-                    thumbnailVersion = r.thumbnailVersion,
-                )
-            }
-        }.flowOn(io)
-
-        override fun observeProject(id: ProjectId): Flow<Project?> =
-            combine(projects.observe(id.value), tabs.observeVisible(id.value)) { p, ts ->
-                p?.let { Project(ProjectId(it.id), it.name, it.createdAt, it.updatedAt, it.favorite, ts.map { t -> t.toDomain() }) }
-            }.distinctUntilChanged().flowOn(io)
-
-        override suspend fun createProject(name: String, firstTabTitle: String, profile: DiagramProfile): ProjectId = withContext(io) {
-            val now = clock.nowMillis()
-            val id = ProjectId(ids.next())
-            db.withTransaction {
-                projects.insert(ProjectEntity(id.value, name, now, now, favorite = false))
-                tabs.insert(Tab(TabId(ids.next()), id, firstTabTitle, 0, profile).toEntity())
-            }
-            id
+    override fun observeProjects(): Flow<List<ProjectSummary>> = projects.observeSummaries().map { rows ->
+        rows.map { r ->
+            val thumb = files.thumbnailFile(r.id)
+            ProjectSummary(
+                id = ProjectId(r.id),
+                name = r.name,
+                createdAt = r.createdAt,
+                updatedAt = r.updatedAt,
+                favorite = r.favorite,
+                tabCount = r.tabCount,
+                thumbnailPath = thumb.absolutePath.takeIf { r.thumbnailVersion > 0 && thumb.exists() },
+                thumbnailVersion = r.thumbnailVersion,
+            )
         }
+    }.flowOn(io)
 
-        override suspend fun renameProject(id: ProjectId, name: String) =
-            withContext(io) { projects.rename(id.value, name, clock.nowMillis()) }
+    override fun observeProject(id: ProjectId): Flow<Project?> =
+        combine(projects.observe(id.value), tabs.observeVisible(id.value)) { p, ts ->
+            p?.let { Project(ProjectId(it.id), it.name, it.createdAt, it.updatedAt, it.favorite, ts.map { t -> t.toDomain() }) }
+        }.distinctUntilChanged().flowOn(io)
 
-        override suspend fun setFavorite(id: ProjectId, favorite: Boolean) = withContext(io) { projects.setFavorite(id.value, favorite) }
-
-        override suspend fun deleteProject(id: ProjectId) = withContext(io) {
-            projects.delete(id.value)
-            files.deleteProjectFiles(id.value)
+    override suspend fun createProject(name: String, firstTabTitle: String, profile: DiagramProfile): ProjectId = withContext(io) {
+        val now = clock.nowMillis()
+        val id = ProjectId(ids.next())
+        db.withTransaction {
+            projects.insert(ProjectEntity(id.value, name, now, now, favorite = false))
+            tabs.insert(Tab(TabId(ids.next()), id, firstTabTitle, 0, profile).toEntity())
         }
-
-        override suspend fun touch(id: ProjectId) = withContext(io) { projects.touch(id.value, clock.nowMillis()) }
-
-        override suspend fun saveThumbnail(projectId: ProjectId, png: ByteArray) = withContext(io) {
-            files.writeThumbnail(projectId.value, png)
-            projects.setThumbnailVersion(projectId.value, clock.nowMillis())
-        }
-
-        override suspend fun addTab(projectId: ProjectId, title: String, profile: DiagramProfile): TabId = withContext(io) {
-            val id = TabId(ids.next())
-            db.withTransaction {
-                val position = tabs.visible(projectId.value).size
-                tabs.insert(Tab(id, projectId, title, position, profile).toEntity())
-                projects.touch(projectId.value, clock.nowMillis())
-            }
-            id
-        }
-
-        override suspend fun renameTab(id: TabId, title: String) = withContext(io) { tabs.rename(id.value, title) }
-
-        override suspend fun setTabColor(id: TabId, color: TabColor) = withContext(io) { tabs.setColor(id.value, color.name) }
-
-        override suspend fun setTabProfile(id: TabId, profile: DiagramProfile) = withContext(io) { tabs.setProfile(id.value, profile.name) }
-
-        override suspend fun setTabGrid(id: TabId, grid: GridStyle) = withContext(io) { tabs.setGrid(id.value, grid.name) }
-
-        override suspend fun setTabLayers(id: TabId, layers: List<Layer>) =
-            withContext(io) { tabs.setLayers(id.value, Mappers.encodeLayers(layers)) }
-
-        override suspend fun saveCamera(id: TabId, camera: Camera) =
-            withContext(io) { tabs.setCamera(id.value, camera.center.x, camera.center.y, camera.zoom, camera.rotation) }
-
-        override suspend fun reorderTabs(projectId: ProjectId, ordered: List<TabId>) = withContext(io) {
-            tabs.reorder(ordered.map { it.value })
-        }
-
-        override suspend fun duplicateTab(id: TabId): TabId = withContext(io) {
-            val newId = TabId(ids.next())
-            db.withTransaction {
-                val original = requireNotNull(tabs.get(id.value)) { "Unknown tab $id" }
-                val siblings = tabs.visible(original.projectId).map { it.id }.toMutableList()
-                tabs.insert(original.copy(id = newId.value, title = original.title + " copy", deletedAt = null))
-                siblings.add(siblings.indexOf(original.id) + 1, newId.value)
-                tabs.reorder(siblings)
-                val copies = ElementCopier.copy(elements.forTab(id.value).map { json.decodeElement(it.payload) }) { ElementId(ids.next()) }
-                elements.upsert(copies.map { ElementMapper.toEntity(newId.value, it, json) })
-            }
-            newId
-        }
-
-        override suspend fun deleteTab(id: TabId) = withContext(io) { tabs.setDeleted(id.value, clock.nowMillis()) }
-
-        override suspend fun restoreTab(id: TabId) = withContext(io) { tabs.setDeleted(id.value, null) }
-
-        override suspend fun purgeDeletedTabs(projectId: ProjectId) = withContext(io) { tabs.purgeDeleted(projectId.value) }
+        id
     }
+
+    override suspend fun renameProject(id: ProjectId, name: String) =
+        withContext(io) { projects.rename(id.value, name, clock.nowMillis()) }
+
+    override suspend fun setFavorite(id: ProjectId, favorite: Boolean) = withContext(io) { projects.setFavorite(id.value, favorite) }
+
+    override suspend fun deleteProject(id: ProjectId) = withContext(io) {
+        projects.delete(id.value)
+        files.deleteProjectFiles(id.value)
+    }
+
+    override suspend fun touch(id: ProjectId) = withContext(io) { projects.touch(id.value, clock.nowMillis()) }
+
+    override suspend fun saveThumbnail(projectId: ProjectId, png: ByteArray) = withContext(io) {
+        files.writeThumbnail(projectId.value, png)
+        projects.setThumbnailVersion(projectId.value, clock.nowMillis())
+    }
+
+    override suspend fun addTab(projectId: ProjectId, title: String, profile: DiagramProfile): TabId = withContext(io) {
+        val id = TabId(ids.next())
+        db.withTransaction {
+            val position = tabs.visible(projectId.value).size
+            tabs.insert(Tab(id, projectId, title, position, profile).toEntity())
+            projects.touch(projectId.value, clock.nowMillis())
+        }
+        id
+    }
+
+    override suspend fun renameTab(id: TabId, title: String) = withContext(io) { tabs.rename(id.value, title) }
+
+    override suspend fun setTabColor(id: TabId, color: TabColor) = withContext(io) { tabs.setColor(id.value, color.name) }
+
+    override suspend fun setTabProfile(id: TabId, profile: DiagramProfile) = withContext(io) { tabs.setProfile(id.value, profile.name) }
+
+    override suspend fun setTabGrid(id: TabId, grid: GridStyle) = withContext(io) { tabs.setGrid(id.value, grid.name) }
+
+    override suspend fun setTabLayers(id: TabId, layers: List<Layer>) =
+        withContext(io) { tabs.setLayers(id.value, Mappers.encodeLayers(layers)) }
+
+    override suspend fun saveCamera(id: TabId, camera: Camera) =
+        withContext(io) { tabs.setCamera(id.value, camera.center.x, camera.center.y, camera.zoom, camera.rotation) }
+
+    override suspend fun reorderTabs(projectId: ProjectId, ordered: List<TabId>) = withContext(io) {
+        tabs.reorder(ordered.map { it.value })
+    }
+
+    override suspend fun duplicateTab(id: TabId): TabId = withContext(io) {
+        val newId = TabId(ids.next())
+        db.withTransaction {
+            val original = requireNotNull(tabs.get(id.value)) { "Unknown tab $id" }
+            val siblings = tabs.visible(original.projectId).map { it.id }.toMutableList()
+            tabs.insert(original.copy(id = newId.value, title = original.title + " copy", deletedAt = null))
+            siblings.add(siblings.indexOf(original.id) + 1, newId.value)
+            tabs.reorder(siblings)
+            val copies = ElementCopier.copy(elements.forTab(id.value).map { json.decodeElement(it.payload) }) { ElementId(ids.next()) }
+            elements.upsert(copies.map { ElementMapper.toEntity(newId.value, it, json) })
+        }
+        newId
+    }
+
+    override suspend fun deleteTab(id: TabId) = withContext(io) { tabs.setDeleted(id.value, clock.nowMillis()) }
+
+    override suspend fun restoreTab(id: TabId) = withContext(io) { tabs.setDeleted(id.value, null) }
+
+    override suspend fun purgeDeletedTabs(projectId: ProjectId) = withContext(io) { tabs.purgeDeleted(projectId.value) }
+}

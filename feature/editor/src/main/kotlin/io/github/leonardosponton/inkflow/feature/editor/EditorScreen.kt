@@ -195,6 +195,7 @@ private fun CanvasArea(vm: EditorViewModel, state: EditorUiState, toolbarRight: 
                 val images = AssetImageCache({ vm.renderers.assetFile(vm.projectId, it) }) { view.invalidate() }
                 view = InkCanvasView(ctx, vm.renderers.screenDrawer(images))
                 view.host = vm
+                view.accessibility = vm
                 canvasView = view
                 view
             },

@@ -24,25 +24,25 @@ import javax.inject.Singleton
  */
 @Singleton
 class EditorRenderers
-    @Inject
-    constructor(
-        private val catalog: NotationCatalog,
-        private val assets: AssetStore,
-        @param:DefaultDispatcher private val background: CoroutineDispatcher,
-    ) {
-        val metrics = AndroidTextMetrics()
-        private val offscreenLock = Mutex()
+@Inject
+constructor(
+    private val catalog: NotationCatalog,
+    private val assets: AssetStore,
+    @param:DefaultDispatcher private val background: CoroutineDispatcher,
+) {
+    val metrics = AndroidTextMetrics()
+    private val offscreenLock = Mutex()
 
-        fun screenDrawer(images: ImageSource): SceneDrawer = SceneDrawer(catalog, metrics, images)
+    fun screenDrawer(images: ImageSource): SceneDrawer = SceneDrawer(catalog, metrics, images)
 
-        fun assetFile(project: ProjectId, asset: AssetId): File? =
-            assets.pathFor(project, asset)?.let(::File)
+    fun assetFile(project: ProjectId, asset: AssetId): File? =
+        assets.pathFor(project, asset)?.let(::File)
 
-        /** Runs [block] with a rasterizer that resolves images of [project]; calls are serialized. */
-        suspend fun <T> offscreen(project: ProjectId, block: (SceneRasterizer) -> T): T = offscreenLock.withLock {
-            withContext(background) {
-                val drawer = SceneDrawer(catalog, AndroidTextMetrics(), SyncImageSource { assetFile(project, it) })
-                block(SceneRasterizer(drawer))
-            }
+    /** Runs [block] with a rasterizer that resolves images of [project]; calls are serialized. */
+    suspend fun <T> offscreen(project: ProjectId, block: (SceneRasterizer) -> T): T = offscreenLock.withLock {
+        withContext(background) {
+            val drawer = SceneDrawer(catalog, AndroidTextMetrics(), SyncImageSource { assetFile(project, it) })
+            block(SceneRasterizer(drawer))
         }
     }
+}
