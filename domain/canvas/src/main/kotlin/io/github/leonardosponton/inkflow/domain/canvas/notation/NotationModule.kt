@@ -1,6 +1,8 @@
 package io.github.leonardosponton.inkflow.domain.canvas.notation
 
 import io.github.leonardosponton.inkflow.core.model.ElementId
+import io.github.leonardosponton.inkflow.domain.canvas.command.Command
+import io.github.leonardosponton.inkflow.domain.canvas.element.Connector
 import io.github.leonardosponton.inkflow.domain.canvas.scene.Scene
 import io.github.leonardosponton.inkflow.domain.diagram.BasicMarkers
 import io.github.leonardosponton.inkflow.domain.diagram.BasicShapes
@@ -28,6 +30,12 @@ fun interface DiagramValidator {
     fun validate(scene: Scene): List<ValidationIssue>
 }
 
+/**
+ * Optional extra edit a notation proposes after the user connects two nodes (e.g. "add a foreign
+ * key column"). The editor asks for confirmation before running [command].
+ */
+data class FollowUp(val message: String, val actionLabel: String, val command: Command)
+
 /** A plug-in notation: shapes, markers, content layout, serializers and validation rules. */
 interface NotationModule {
     val id: NotationId
@@ -37,6 +45,12 @@ interface NotationModule {
     val layouters: List<ContentLayouter> get() = emptyList()
     val serializers: SerializersModule get() = SerializersModule { }
     val validators: List<DiagramValidator> get() = emptyList()
+
+    /** Adjusts a connector the user just drew from or to this notation's shapes (markers, default labels). */
+    fun decorateNewConnector(connector: Connector, scene: Scene): Connector = connector
+
+    /** Suggestion to offer once [connector] (already in [scene]) was created. */
+    fun followUpFor(connector: Connector, scene: Scene): FollowUp? = null
 }
 
 object BasicNotation : NotationModule {
@@ -67,4 +81,9 @@ class NotationCatalog(modules: List<NotationModule>) {
         SerializersModule { this@NotationCatalog.modules.forEach { include(it.serializers) } }
 
     fun validate(scene: Scene): List<ValidationIssue> = validators.flatMap { it.validate(scene) }
+
+    fun decorateNewConnector(connector: Connector, scene: Scene): Connector =
+        this.modules.fold(connector) { c, m -> m.decorateNewConnector(c, scene) }
+
+    fun followUpFor(connector: Connector, scene: Scene): FollowUp? = this.modules.firstNotNullOfOrNull { it.followUpFor(connector, scene) }
 }

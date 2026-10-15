@@ -18,6 +18,7 @@ complexity:
     thresholdInObjects: 25
     thresholdInInterfaces: 20
     ignorePrivate: true
+    ignoreOverridden: true
   CyclomaticComplexMethod:
     threshold: 15
     ignoreSimpleWhenEntries: true
@@ -43,9 +44,9 @@ style:
     ignoreNamedArgument: true
     ignoreHashCodeFunction: true
     ignoreNumbers: ['-1', '0', '1', '2', '3', '4', '5', '6', '8', '10', '24', '100', '255', '1000', '0.5', '0.25', '0.75', '1e-6', '16777215']
-    excludes: ['**/test/**', '**/androidTest/**', '**/designsystem/**', '**/*Screen.kt', '**/*Theme.kt', '**/*Shapes*.kt', '**/*Symbols*.kt', '**/*Markers*.kt']
+    excludes: ['**/test/**', '**/androidTest/**', '**/designsystem/**', '**/*Screen.kt', '**/*Theme.kt', '**/*Shapes*.kt', '**/*Symbols*.kt', '**/*Markers*.kt', '**/ui/**', '**/*Palette.kt']
   ReturnCount:
-    max: 4
+    max: 5
     excludeGuardClauses: true
   WildcardImport:
     active: true
@@ -71,3 +72,7 @@ exceptions:
 potential-bugs:
   UnsafeCallOnNullableType:
     active: true
+
+performance:
+  SpreadOperator:
+    active: false

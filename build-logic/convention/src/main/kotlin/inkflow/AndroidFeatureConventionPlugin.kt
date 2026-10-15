@@ -19,6 +19,7 @@ class AndroidFeatureConventionPlugin : Plugin<Project> {
             add("implementation", libs.lib("androidx-hilt-lifecycle-viewmodel-compose"))
             add("implementation", libs.lib("kotlinx-coroutines-android"))
             add("implementation", libs.lib("compose-material-icons-extended"))
+            add("implementation", libs.lib("androidx-activity-compose"))
             add("testImplementation", project(":core:testing"))
         }
     }

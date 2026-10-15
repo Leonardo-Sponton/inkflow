@@ -11,6 +11,8 @@ import io.github.leonardosponton.inkflow.domain.canvas.scene.Scene
 import io.github.leonardosponton.inkflow.domain.canvas.scene.SceneChange
 import io.github.leonardosponton.inkflow.domain.canvas.scene.SceneIndex
 import io.github.leonardosponton.inkflow.domain.canvas.undo.UndoManager
+import io.github.leonardosponton.inkflow.domain.diagram.ApproximateTextMetrics
+import io.github.leonardosponton.inkflow.domain.diagram.TextMetrics
 
 /**
  * The editing aggregate of one tab: current scene, its spatial index and undo history.
@@ -20,6 +22,8 @@ class EditorSession(
     val catalog: NotationCatalog,
     private val ids: IdGenerator,
     initial: Scene = Scene.Empty,
+    /** Metrics used to size structured content (the renderer passes real font metrics). */
+    val textMetrics: TextMetrics = ApproximateTextMetrics,
 ) {
     val router = ConnectorRouter(catalog.shapes)
     val index = SceneIndex().also { it.rebuild(initial) }

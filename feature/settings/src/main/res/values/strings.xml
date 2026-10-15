@@ -1,0 +1,33 @@
+<resources>
+    <string name="settings_title">Settings</string>
+    <string name="back">Back</string>
+    <string name="section_input">S Pen &amp; touch</string>
+    <string name="section_canvas">Canvas</string>
+    <string name="section_appearance">Appearance</string>
+    <string name="section_about">About</string>
+    <string name="finger_drawing">Draw with finger</string>
+    <string name="finger_drawing_hint">Off: the pen draws and fingers navigate.</string>
+    <string name="side_button">Hold S Pen button for</string>
+    <string name="eraser">Eraser</string>
+    <string name="lasso">Lasso</string>
+    <string name="finger_rotation">Rotate canvas with two fingers</string>
+    <string name="finger_rotation_hint">Rotation is applied to the view only.</string>
+    <string name="ink_to_shape">Ink to shape</string>
+    <string name="ink_to_shape_hint">Hold the pen still at the end of a stroke to snap it to a clean shape.</string>
+    <string name="snap_grid">Snap to grid</string>
+    <string name="smart_guides">Smart alignment guides</string>
+    <string name="minimap">Show minimap</string>
+    <string name="dark_canvas">Dark canvas</string>
+    <string name="default_grid">Background for new tabs</string>
+    <string name="grid_plain">Plain</string>
+    <string name="grid_dots">Dots</string>
+    <string name="grid_squares">Squares</string>
+    <string name="grid_isometric">Isometric</string>
+    <string name="theme">Theme</string>
+    <string name="theme_system">System</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="dynamic_color">Dynamic color</string>
+    <string name="offline_title">Works fully offline</string>
+    <string name="offline_body">Inkflow has no network access. Your projects stay on this device; export and import go through files you choose.</string>
+</resources>

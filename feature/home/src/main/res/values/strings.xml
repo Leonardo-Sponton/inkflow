@@ -1,0 +1,27 @@
+<resources>
+    <string name="home_title">Inkflow</string>
+    <string name="settings">Settings</string>
+    <string name="new_project">New project</string>
+    <string name="profile_freeform">Freeform board</string>
+    <string name="profile_uml">UML diagram</string>
+    <string name="profile_database">Database model</string>
+    <string name="profile_flowchart">Flowchart</string>
+    <string name="search_projects">Search projects</string>
+    <string name="sort_recent">Recent</string>
+    <string name="sort_name">Name</string>
+    <string name="favorites">Favorites</string>
+    <string name="favorite">Add to favorites</string>
+    <string name="unfavorite">Remove from favorites</string>
+    <string name="more_options">More options</string>
+    <string name="rename">Rename</string>
+    <string name="delete">Delete</string>
+    <string name="cancel">Cancel</string>
+    <string name="ok">OK</string>
+    <string name="open_project">Open %1$s</string>
+    <string name="one_tab">1 tab</string>
+    <string name="n_tabs">%1$d tabs</string>
+    <string name="no_matches">No projects match.</string>
+    <string name="empty_home">No projects yet. Tap “New project” to start sketching.</string>
+    <string name="delete_project_title">Delete project?</string>
+    <string name="delete_project_message">“%1$s” and all its tabs will be deleted permanently.</string>
+</resources>

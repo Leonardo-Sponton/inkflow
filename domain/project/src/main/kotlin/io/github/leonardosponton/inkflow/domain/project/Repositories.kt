@@ -1,5 +1,6 @@
 package io.github.leonardosponton.inkflow.domain.project
 
+import io.github.leonardosponton.inkflow.core.model.AssetId
 import io.github.leonardosponton.inkflow.core.model.Camera
 import io.github.leonardosponton.inkflow.core.model.DiagramProfile
 import io.github.leonardosponton.inkflow.core.model.GridStyle
@@ -64,3 +65,20 @@ interface SettingsRepository {
 
     suspend fun update(transform: (UserSettings) -> UserSettings)
 }
+
+/** Binary assets (images) owned by a project, stored in app-private storage. */
+interface AssetStore {
+    /** Absolute path of the asset file, or `null` if missing. */
+    fun pathFor(project: ProjectId, asset: AssetId): String?
+
+    suspend fun save(project: ProjectId, bytes: ByteArray, mimeType: String): AssetId
+
+    /** Makes [asset] of [from] available in [to] (cross-project paste); returns the id in [to]. */
+    suspend fun copy(from: ProjectId, to: ProjectId, asset: AssetId): AssetId?
+
+    suspend fun list(project: ProjectId): List<AssetInfo>
+
+    suspend fun read(project: ProjectId, asset: AssetId): ByteArray?
+}
+
+data class AssetInfo(val id: AssetId, val mimeType: String)

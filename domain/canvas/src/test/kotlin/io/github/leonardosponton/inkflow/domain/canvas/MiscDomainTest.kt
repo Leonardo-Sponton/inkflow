@@ -153,3 +153,29 @@ class MiscDomainTest {
         assertTrue(hit.inLasso(emptyList()).isEmpty())
     }
 }
+
+class ElementCopierTest {
+    @Test
+    fun `copies remap internal references and free external ones`() {
+        val s = session()
+        s.execute(
+            io.github.leonardosponton.inkflow.domain.canvas.command.AddElements(
+                listOf(node("a", 0.0, 0.0), node("b", 300.0, 0.0), node("c", 600.0, 0.0), edge("ab", "a", "b"), edge("bc", "b", "c")),
+            ),
+        )
+        s.execute(io.github.leonardosponton.inkflow.domain.canvas.command.SetGroup(listOf(id("a"), id("b")), id("g")))
+        var n = 0
+        val picked = listOf("a", "b", "ab", "bc").map { s.scene[id(it)]!! }
+        val copies = io.github.leonardosponton.inkflow.domain.canvas.clipboard.ElementCopier.copy(picked, Vec2(10.0, 10.0)) { id("n${n++}") }
+        assertEquals(4, copies.size)
+        val ab = copies[2] as io.github.leonardosponton.inkflow.domain.canvas.element.Connector
+        val bc = copies[3] as io.github.leonardosponton.inkflow.domain.canvas.element.Connector
+        assertEquals(id("n0"), (ab.source as io.github.leonardosponton.inkflow.domain.canvas.element.Endpoint.Attached).node)
+        assertTrue(bc.target is io.github.leonardosponton.inkflow.domain.canvas.element.Endpoint.Free)
+        assertEquals(10.0, copies[0].bounds.left)
+        assertEquals(copies[0].groupId, copies[1].groupId)
+        assertTrue(copies[0].groupId != id("g"))
+        val ink = io.github.leonardosponton.inkflow.domain.canvas.clipboard.ElementCopier.copy(listOf(stroke("k", 0.0 to 0.0, 1.0 to 1.0))) { id("z") }
+        assertEquals(id("z"), ink.single().id)
+    }
+}
