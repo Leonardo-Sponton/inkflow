@@ -1,0 +1,70 @@
+# Only deviations from detekt's defaults (buildUponDefaultConfig = true).
+build:
+  maxIssues: 0
+
+complexity:
+  LongMethod:
+    threshold: 40
+    ignoreAnnotated: ['Composable']
+  LongParameterList:
+    functionThreshold: 8
+    constructorThreshold: 12
+    ignoreDefaultParameters: true
+    ignoreDataClasses: true
+    ignoreAnnotated: ['Composable']
+  TooManyFunctions:
+    thresholdInFiles: 25
+    thresholdInClasses: 25
+    thresholdInObjects: 25
+    thresholdInInterfaces: 20
+    ignorePrivate: true
+  CyclomaticComplexMethod:
+    threshold: 15
+    ignoreSimpleWhenEntries: true
+  NestedBlockDepth:
+    threshold: 4
+  ComplexCondition:
+    threshold: 5
+
+naming:
+  FunctionNaming:
+    ignoreAnnotated: ['Composable', 'Test']
+  TopLevelPropertyNaming:
+    constantPattern: '[A-Z][A-Za-z0-9_]*'
+  MatchingDeclarationName:
+    active: false
+
+style:
+  MagicNumber:
+    ignorePropertyDeclaration: true
+    ignoreCompanionObjectPropertyDeclaration: true
+    ignoreAnnotation: true
+    ignoreEnums: true
+    ignoreNamedArgument: true
+    ignoreHashCodeFunction: true
+    ignoreNumbers: ['-1', '0', '1', '2', '0.5', '0.0', '1.0', '2.0', '-1.0', '0f', '1f', '2f', '0.5f']
+    excludes: ['**/test/**', '**/androidTest/**', '**/designsystem/**', '**/*Screen.kt', '**/*Theme.kt', '**/*Shapes*.kt', '**/*Symbols*.kt', '**/*Markers*.kt']
+  ReturnCount:
+    max: 4
+    excludeGuardClauses: true
+  WildcardImport:
+    active: true
+  UnusedPrivateMember:
+    ignoreAnnotated: ['Preview']
+  ForbiddenComment:
+    active: false
+  MaxLineLength:
+    maxLineLength: 120
+  DestructuringDeclarationWithTooManyEntries:
+    maxDestructuringEntries: 4
+
+exceptions:
+  TooGenericExceptionCaught:
+    active: true
+    allowedExceptionNameRegex: '_|(ignore|expected|e).*'
+  SwallowedException:
+    allowedExceptionNameRegex: '_|(ignore|expected).*'
+
+potential-bugs:
+  UnsafeCallOnNullableType:
+    active: true
