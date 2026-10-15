@@ -62,7 +62,11 @@ class MainActivity : ComponentActivity() {
     /** Debug/benchmark builds only: `--es seed all|flowchart|uml|db|shapes|stress`. */
     private fun seedIfRequested() {
         val kind = intent?.getStringExtra(EXTRA_SEED) ?: return
-        if (!BuildConfig.DEBUG && BuildConfig.BUILD_TYPE != "benchmark") return
+        if (!BuildConfig.DEBUG && !BuildConfig.BUILD_TYPE.startsWith("benchmark") &&
+            !BuildConfig.BUILD_TYPE.startsWith("nonMinified")
+        ) {
+            return
+        }
         intent.removeExtra(EXTRA_SEED)
         lifecycleScope.launch { seeder.seed(kind) }
     }

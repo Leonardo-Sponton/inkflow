@@ -87,10 +87,13 @@ object InkBrushes {
 
 /** Meshes are expensive to build, so finished strokes are cached by element value. */
 class InkStrokeCache {
-    private val cache = object : LruCache<Pair<InkStroke, Int>, Stroke>(CACHE_SIZE) {}
+    /** Cheap key: element id, identity of its (immutable) point buffer, brush and display color. */
+    private data class Key(val id: ElementId, val points: Int, val brush: InkBrush, val color: Int)
+
+    private val cache = object : LruCache<Key, Stroke>(CACHE_SIZE) {}
 
     fun get(s: InkStroke, displayColor: Int): Stroke {
-        val key = s to displayColor
+        val key = Key(s.id, System.identityHashCode(s.points.data), s.brush, displayColor)
         cache.get(key)?.let { return it }
         return InkBrushes.toInkStroke(s, displayColor).also { cache.put(key, it) }
     }

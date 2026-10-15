@@ -49,6 +49,8 @@ data class RenderFrame(
     val hidden: Set<ElementId> = emptySet(),
     /** Uncommitted elements drawn on top (shape placement preview, recognized ink). */
     val preview: List<CanvasElement> = emptyList(),
+    /** A pinch is in progress: the renderer may scale its cached layer instead of redrawing. */
+    val zooming: Boolean = false,
 ) {
     val palette: CanvasPalette get() = if (darkCanvas) CanvasPalette.Dark else CanvasPalette.Light
 }

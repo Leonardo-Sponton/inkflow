@@ -15,6 +15,7 @@ import androidx.ink.authoring.InProgressStrokesView
 import androidx.ink.strokes.Stroke
 import androidx.input.motionprediction.MotionEventPredictor
 import io.github.leonardosponton.inkflow.core.model.ElementId
+import io.github.leonardosponton.inkflow.core.model.Rect
 import io.github.leonardosponton.inkflow.core.model.Size
 import io.github.leonardosponton.inkflow.core.model.Vec2
 import io.github.leonardosponton.inkflow.domain.canvas.element.InkBrush
@@ -120,17 +121,37 @@ class InkCanvasView(context: Context, private val drawer: SceneDrawer) : FrameLa
         canvas.clipRect(0, 0, width, height)
         canvas.drawColor(palette.background)
         val visible = f.camera.visibleWorldRect(viewport())
+        if (canvas.isHardwareAccelerated) {
+            sceneCache.draw(
+                canvas,
+                f,
+                viewport(),
+                worldToScreen,
+            )
+        } else {
+            drawScene(canvas, f, visible, worldToScreen)
+        }
         canvas.save()
         canvas.concat(worldToScreen)
-        grid.draw(canvas, f.grid, visible, f.camera.zoom, palette)
         val pass = SceneDrawer.Pass(palette, f.camera.zoom, worldToScreen, f.hidden)
-        val elements = f.index.visible(f.scene, visible.inflate(CULL_MARGIN / f.camera.zoom)).filter { it.layerId !in f.hiddenLayers }
-        drawer.drawAll(canvas, elements, pass)
         drawer.drawAll(canvas, f.preview, pass)
         overlay.draw(canvas, f.overlay, f.camera.zoom, palette)
         canvas.restore()
         completeHandoff(f)
     }
+
+    /** Grid and committed elements of [area] drawn with [matrix] (world → canvas). */
+    internal fun drawScene(canvas: Canvas, f: RenderFrame, area: Rect, matrix: Matrix) {
+        canvas.save()
+        canvas.concat(matrix)
+        grid.draw(canvas, f.grid, area, f.camera.zoom, f.palette)
+        val pass = SceneDrawer.Pass(f.palette, f.camera.zoom, matrix, f.hidden)
+        val elements = f.index.visible(f.scene, area.inflate(CULL_MARGIN / f.camera.zoom)).filter { it.layerId !in f.hiddenLayers }
+        drawer.drawAll(canvas, elements, pass)
+        canvas.restore()
+    }
+
+    private val sceneCache = SceneCache(this)
 
     /** Removes wet strokes whose committed element is now part of the drawn scene (no flicker). */
     private fun completeHandoff(f: RenderFrame) {

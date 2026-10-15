@@ -11,6 +11,8 @@
         android:roundIcon="@mipmap/ic_launcher"
         android:supportsRtl="true"
         android:theme="@style/Theme.Inkflow">
+        <!-- Lets Macrobenchmark and Perfetto profile release builds (no effect on users). -->
+        <profileable android:shell="true" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

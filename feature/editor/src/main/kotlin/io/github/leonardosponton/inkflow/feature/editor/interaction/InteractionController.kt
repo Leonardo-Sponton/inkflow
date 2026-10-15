@@ -89,7 +89,10 @@ class InteractionController(
                 env.redo()
             }
             is GestureEvent.Navigate -> navigate(e)
-            GestureEvent.NavigateEnd -> env.setCamera(env.camera.snappedRotation())
+            GestureEvent.NavigateEnd -> {
+                zooming = false
+                env.setCamera(env.camera.snappedRotation())
+            }
             is GestureEvent.Hover -> {
                 hover = toWorld(e.position)
                 hoverEraser = e.eraser
@@ -147,7 +150,12 @@ class InteractionController(
 
     // ---- navigation -----------------------------------------------------------------------------
 
+    /** True while a pinch is in progress (the renderer scales its cache instead of redrawing). */
+    var zooming = false
+        private set
+
     private fun navigate(e: GestureEvent.Navigate) {
+        if (e.zoom != 1.0) zooming = true
         var cam = env.camera.panByScreen(e.pan.x, e.pan.y)
         if (e.zoom != 1.0) cam = cam.zoomAround(e.focus, e.zoom, env.viewport)
         if (env.settings.fingerRotation && e.rotation != 0.0) cam = cam.rotateAround(e.focus, e.rotation, env.viewport)
