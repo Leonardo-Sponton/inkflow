@@ -8,6 +8,9 @@ Inkflow is built for the **Galaxy Tab S9 FE+ and its S Pen**, and runs on any An
 or phone. It works **fully offline**: it has no network permission, and projects only leave the
 device when you export them.
 
+**Download:** get the APK from the [latest release](https://github.com/Leonardo-Sponton/inkflow/releases/latest)
+(Android 10 or newer). You will need to allow installing apps from your browser or file manager.
+
 | Light | Dark |
 |---|---|
 | ![Project gallery, light theme](docs/screenshots/home-light.png) | ![Project gallery, dark theme](docs/screenshots/home-dark.png) |
