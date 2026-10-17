@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+### Phase 9 — Polish & performance
+- Tiled scene cache: 512 px `RenderNode` tiles; pans record only new tiles, edits re-record only
+  the tiles they touch, new ink goes to an overlay; pixel-snapped (sharper while panning).
+- Level of detail by on-screen element size; tiny ink drawn as a polyline.
+- Canvas requests the high refresh-rate category (90 Hz on the Tab S9 FE+ in Adaptive mode).
+- Macrobenchmarks (cold start, open large board, pan/zoom, ink) and a Baseline Profile generated on
+  the tablet; results in `docs/device-notes.md`.
+- Keyboard shortcuts, canvas accessibility (virtual views), dark mode / dark canvas, first-open fit,
+  thumbnails.
+
 ### Phase 8 — Export / import
 - PNG (1–4×, transparent), PDF (tab, selection or one page per tab; ink as exact outlines), SVG.
 - `.inkflow` archive (zip: versioned manifest, one JSON per tab, assets) with migration hook;

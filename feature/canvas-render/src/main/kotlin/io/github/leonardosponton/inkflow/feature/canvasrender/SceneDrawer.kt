@@ -81,9 +81,15 @@ class SceneDrawer(
         val f = node.frame
         val style = node.style
         val alpha = (style.opacity.coerceIn(0.0, 1.0) * MAX_ALPHA).toInt()
-        if (pass.zoom < LOD_SIMPLE_ZOOM && def.outline.paths.isNotEmpty()) {
+        // Level of detail by on-screen size: a shape a few pixels wide is drawn as a tinted box.
+        if (maxOf(f.width, f.height) * pass.zoom < LOD_NODE_PX && def.outline.paths.isNotEmpty()) {
             fill.color = pass.palette.adapt(style.fill?.argb ?: style.stroke.withAlpha(LOD_ALPHA).argb)
-            canvas.drawRect(f.left.toFloat(), f.top.toFloat(), f.right.toFloat(), f.bottom.toFloat(), fill)
+            scratchRect.set(f.left.toFloat(), f.top.toFloat(), f.right.toFloat(), f.bottom.toFloat())
+            canvas.drawRect(scratchRect, fill)
+            stroke.color = pass.palette.adapt(style.stroke)
+            stroke.strokeWidth = (HAIRLINE_PX / pass.zoom).toFloat()
+            stroke.pathEffect = null
+            canvas.drawRect(scratchRect, stroke)
             return
         }
         canvas.save()
@@ -281,6 +287,10 @@ class SceneDrawer(
     private fun drawInk(canvas: Canvas, s: InkStroke, pass: Pass) {
         if (s.points.size == 0) return
         val color = pass.palette.adapt(s.brush.color)
+        if (!forcePathInk && maxOf(s.bounds.width, s.bounds.height) * pass.zoom < LOD_INK_PX) {
+            drawInkSketch(canvas, s, color, pass)
+            return
+        }
         canvas.save()
         canvas.translate(s.origin.x.toFloat(), s.origin.y.toFloat())
         if (forcePathInk) {
@@ -293,6 +303,30 @@ class SceneDrawer(
         }
         canvas.restore()
     }
+
+    /** A tiny stroke on screen: a decimated polyline instead of a tessellated brush mesh. */
+    private fun drawInkSketch(canvas: Canvas, s: InkStroke, color: Int, pass: Pass) {
+        val pts = s.points
+        val last = pts.size - 1
+        val step = maxOf(1, (last + LOD_INK_SEGMENTS - 1) / LOD_INK_SEGMENTS)
+        var n = 0
+        var i = 0
+        while (i < last) {
+            val j = minOf(i + step, last)
+            sketch[n++] = (s.origin.x + pts.x(i)).toFloat()
+            sketch[n++] = (s.origin.y + pts.y(i)).toFloat()
+            sketch[n++] = (s.origin.x + pts.x(j)).toFloat()
+            sketch[n++] = (s.origin.y + pts.y(j)).toFloat()
+            i = j
+        }
+        if (n == 0) return
+        stroke.color = if (s.brush.kind == BrushKind.HIGHLIGHTER) ColorArgb(color).withAlpha(HIGHLIGHTER_ALPHA).argb else color
+        stroke.strokeWidth = maxOf(s.brush.size.toDouble(), HAIRLINE_PX / pass.zoom).toFloat()
+        stroke.pathEffect = null
+        canvas.drawLines(sketch, 0, n, stroke)
+    }
+
+    private val sketch = FloatArray((LOD_INK_SEGMENTS + 1) * 4)
 
     private fun drawText(canvas: Canvas, t: TextElement, pass: Pass) {
         val f = t.frame
@@ -331,7 +365,9 @@ class SceneDrawer(
     private companion object {
         const val MAX_ALPHA = 255
         const val LOD_ALPHA = 0x40
-        const val LOD_SIMPLE_ZOOM = 0.12
+        const val LOD_NODE_PX = 24.0
+        const val LOD_INK_PX = 24.0
+        const val LOD_INK_SEGMENTS = 8
         const val MIN_TEXT_PX = 3.5
         const val HAIRLINE_PX = 1.0
         const val SEPARATOR_RATIO = 0.75

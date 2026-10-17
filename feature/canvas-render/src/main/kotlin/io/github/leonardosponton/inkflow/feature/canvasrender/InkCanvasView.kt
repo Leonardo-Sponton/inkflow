@@ -20,6 +20,7 @@ import io.github.leonardosponton.inkflow.core.model.ElementId
 import io.github.leonardosponton.inkflow.core.model.Rect
 import io.github.leonardosponton.inkflow.core.model.Size
 import io.github.leonardosponton.inkflow.core.model.Vec2
+import io.github.leonardosponton.inkflow.domain.canvas.element.CanvasElement
 import io.github.leonardosponton.inkflow.domain.canvas.element.InkBrush
 import io.github.leonardosponton.inkflow.domain.canvas.element.InkStroke
 import io.github.leonardosponton.inkflow.domain.canvas.input.GestureConfig
@@ -102,6 +103,12 @@ class InkCanvasView(context: Context, private val drawer: SceneDrawer) : FrameLa
         isFocusable = true
         contentDescription = context.getString(R.string.canvas_description)
         ViewCompat.setAccessibilityDelegate(this, a11y)
+        // Ask for the panel's top rate (90 Hz on the Tab S9 FE+) while the canvas animates; the
+        // vote only applies to frames where this view invalidates, so an idle board stays low.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+            requestedFrameRate = REQUESTED_FRAME_RATE_CATEGORY_HIGH
+            wet.requestedFrameRate = REQUESTED_FRAME_RATE_CATEGORY_HIGH
+        }
     }
 
     private fun viewport() = Size(width.toDouble(), height.toDouble())
@@ -157,6 +164,14 @@ class InkCanvasView(context: Context, private val drawer: SceneDrawer) : FrameLa
         val pass = SceneDrawer.Pass(f.palette, f.camera.zoom, matrix, f.hidden)
         val elements = f.index.visible(f.scene, area.inflate(CULL_MARGIN / f.camera.zoom)).filter { it.layerId !in f.hiddenLayers }
         drawer.drawAll(canvas, elements, pass)
+        canvas.restore()
+    }
+
+    /** Draws [elements] (already ordered) through [matrix], without grid or culling. */
+    internal fun drawElements(canvas: Canvas, f: RenderFrame, elements: List<CanvasElement>, matrix: Matrix) {
+        canvas.save()
+        canvas.concat(matrix)
+        drawer.drawAll(canvas, elements, SceneDrawer.Pass(f.palette, f.camera.zoom, matrix, f.hidden))
         canvas.restore()
     }
 
@@ -334,9 +349,11 @@ class InkCanvasView(context: Context, private val drawer: SceneDrawer) : FrameLa
         else -> ToolType.FINGER
     }
 
-    private companion object {
-        const val HISTORY_NONE = -1
+    internal companion object {
+        private const val HISTORY_NONE = -1
+
+        /** Screen pixels an element may draw beyond its bounds (strokes, markers, labels). */
         const val CULL_MARGIN = 32.0
-        val IDENTITY = Matrix()
+        private val IDENTITY = Matrix()
     }
 }
