@@ -7,7 +7,7 @@ behaviour can only be judged on the device.
 - Physical size 1600×2560 (portrait natural orientation).
 - Phase 0 build installed and launched fine. Phases 1–8 were developed on the emulator; Phase 9
   performance work was measured on the tablet (2026-10-16). **Pen feel, palm rejection and latency
-  still need the on-device checklist** (see `CLAUDE.md`).
+  still need on-device testing**.
 - Display modes 90/60/30 Hz. With *Settings → Display → Motion smoothness → Standard* the panel is
   capped at 60 Hz; *Adaptive* is needed for 90 Hz. The canvas votes
   `REQUESTED_FRAME_RATE_CATEGORY_HIGH` (API 35+) so Adaptive mode runs it at 90 Hz while it animates.

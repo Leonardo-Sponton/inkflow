@@ -6,3 +6,18 @@ local.properties
 *.iml
 captures/
 /benchmark/build/
+
+# Personal / assistant working notes (machine and device specific)
+CLAUDE.md
+CLAUDE.local.md
+.claude/
+
+# Signing material and local secrets
+*.jks
+*.keystore
+keystore.properties
+signing.properties
+
+# Device captures (screen recordings, screenshots)
+*.mp4
+/screenshots/
