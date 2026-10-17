@@ -85,6 +85,9 @@ class InkCanvasView(context: Context, private val drawer: SceneDrawer) : FrameLa
     private val screenToWorld = Matrix()
     private val timer = Runnable { onTimer() }
 
+    /** Top-left corner in window coordinates at the last size change. */
+    private var lastOrigin = Vec2.Zero
+
     var frame: RenderFrame? = null
         set(value) {
             field = value
@@ -126,9 +129,20 @@ class InkCanvasView(context: Context, private val drawer: SceneDrawer) : FrameLa
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
-        frame?.let { updateMatrices(it) }
         val at = IntArray(2).also(::getLocationInWindow)
-        host?.onViewportChanged(Size(w.toDouble(), h.toDouble()), Vec2(at[0].toDouble(), at[1].toDouble()))
+        val origin = Vec2(at[0].toDouble(), at[1].toDouble())
+        val f = frame
+        if (f != null && oldw > 0 && oldh > 0) {
+            // Same compensation the host applies in onViewportChanged, done here too so the first
+            // frame at the new size already keeps the content still (otherwise it jumps for a frame).
+            val dx = lastOrigin.x - origin.x + (oldw - w) / 2.0
+            val dy = lastOrigin.y - origin.y + (oldh - h) / 2.0
+            frame = f.copy(camera = f.camera.panByScreen(dx, dy))
+        } else {
+            f?.let { updateMatrices(it) }
+        }
+        lastOrigin = origin
+        host?.onViewportChanged(Size(w.toDouble(), h.toDouble()), origin)
     }
 
     // ---- drawing --------------------------------------------------------------------------------
