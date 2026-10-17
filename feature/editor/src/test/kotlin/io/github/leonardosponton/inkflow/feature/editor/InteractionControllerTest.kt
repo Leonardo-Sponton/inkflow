@@ -167,6 +167,9 @@ class InteractionControllerTest {
         assertNotNull(c.overlay().selection)
         c.onGesture(GestureEvent.Tap(p(160.0, 120.0), ToolType.STYLUS))
         c.onGesture(GestureEvent.Tap(p(160.0, 120.0), ToolType.STYLUS))
+        assertEquals(null, env.edited) // a second single tap does not open the editor
+        assertEquals(setOf(ElementId("a")), env.selection)
+        c.onGesture(GestureEvent.DoubleTap(p(160.0, 120.0), ToolType.STYLUS))
         assertEquals(ElementId("a"), env.edited)
     }
 

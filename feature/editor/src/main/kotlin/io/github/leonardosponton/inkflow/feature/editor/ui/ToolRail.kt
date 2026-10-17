@@ -25,13 +25,18 @@ import androidx.compose.material.icons.outlined.NearMe
 import androidx.compose.material.icons.outlined.SwapHoriz
 import androidx.compose.material.icons.outlined.TextFields
 import androidx.compose.material.icons.outlined.Timeline
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconToggleButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TooltipBox
+import androidx.compose.material3.TooltipDefaults
+import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -79,23 +84,39 @@ fun ToolRail(
         ) {
             TOOLS.forEach { t ->
                 val label = stringResource(t.label)
-                FilledIconToggleButton(
-                    checked = tools.kind == t.kind,
-                    onCheckedChange = {
-                        if (t.kind == ToolKind.SHAPE) onIntent(EditorIntent.TogglePalette)
-                        onIntent(EditorIntent.SetTool(t.kind))
-                    },
-                    modifier = Modifier.size(48.dp).semantics { contentDescription = label },
-                ) { Icon(t.icon, null) }
+                NameTip(label) {
+                    FilledIconToggleButton(
+                        checked = tools.kind == t.kind,
+                        onCheckedChange = {
+                            if (t.kind == ToolKind.SHAPE) onIntent(EditorIntent.TogglePalette)
+                            onIntent(EditorIntent.SetTool(t.kind))
+                        },
+                        modifier = Modifier.size(48.dp).semantics { contentDescription = label },
+                    ) { Icon(t.icon, null) }
+                }
             }
-            IconButton(onClick = onInsertImage, modifier = Modifier.size(48.dp)) {
-                Icon(Icons.Outlined.Image, stringResource(R.string.tool_image))
+            val image = stringResource(R.string.tool_image)
+            NameTip(image) {
+                IconButton(onClick = onInsertImage, modifier = Modifier.size(48.dp)) { Icon(Icons.Outlined.Image, image) }
             }
             HorizontalDivider(Modifier.size(32.dp, 1.dp))
             ToolOptions(tools, onIntent)
-            IconButton(onClick = onSwapSide) { Icon(Icons.Outlined.SwapHoriz, stringResource(R.string.move_toolbar)) }
+            val swap = stringResource(R.string.move_toolbar)
+            NameTip(swap) { IconButton(onClick = onSwapSide) { Icon(Icons.Outlined.SwapHoriz, swap) } }
         }
     }
+}
+
+/** Long-pressing (or hovering with the pen over) [content] shows [name] in a small tooltip above it. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun NameTip(name: String, content: @Composable () -> Unit) {
+    TooltipBox(
+        positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
+        tooltip = { PlainTooltip { Text(name) } },
+        state = rememberTooltipState(),
+        content = content,
+    )
 }
 
 @Composable

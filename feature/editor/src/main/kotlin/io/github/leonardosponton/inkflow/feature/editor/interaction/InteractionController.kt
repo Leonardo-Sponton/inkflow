@@ -128,11 +128,8 @@ class InteractionController(
     }
 
     private fun selectAt(world: Vec2) {
+        // Text editing opens on a double tap only: a light tap on a selected element keeps it selected.
         val hit = hitTester().elementAt(world, tolerance()) { it.layerId !in env.lockedLayers }
-        if (hit != null && hit.id in env.selection && env.selection.size == 1 && isTextual(hit)) {
-            env.editText(hit.id)
-            return
-        }
         env.selection = hit?.let { expandGroup(it) }.orEmpty()
     }
 
