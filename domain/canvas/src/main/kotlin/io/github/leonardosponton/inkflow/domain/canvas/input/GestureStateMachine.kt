@@ -46,7 +46,8 @@ sealed interface GestureEvent {
     /** Pointer pressed and held without moving. */
     data class LongPress(val position: Vec2, val tool: ToolType) : GestureEvent
 
-    data class Tap(val position: Vec2, val tool: ToolType) : GestureEvent
+    /** [sideButton]: the pen's side button was held (never part of a double tap). */
+    data class Tap(val position: Vec2, val tool: ToolType, val sideButton: Boolean = false) : GestureEvent
 
     data class DoubleTap(val position: Vec2, val tool: ToolType) : GestureEvent
 
@@ -257,7 +258,7 @@ class GestureStateMachine(
     private fun endStroke(s: State.Stroking, p: Vec2, time: Long, out: MutableList<GestureEvent>) {
         val isTap = !s.moved && !s.longPressFired && time - s.startTime <= config.tapTimeoutMs
         out += GestureEvent.StrokeEnd(s.pointerId, p, time, isTap)
-        if (isTap) emitTap(GestureEvent.Tap(p, s.tool), time, out)
+        if (isTap) emitTap(GestureEvent.Tap(p, s.tool, sideButton = s.modifier == StrokeModifier.SIDE_BUTTON), time, out)
         state = State.Idle
     }
 
@@ -371,6 +372,11 @@ class GestureStateMachine(
     }
 
     private fun emitTap(tap: GestureEvent.Tap, time: Long, out: MutableList<GestureEvent>) {
+        if (tap.sideButton) {
+            out += tap
+            lastTap = null
+            return
+        }
         val prev = lastTap
         val isDouble = prev != null && prev.tool == tap.tool && time - lastTapTime <= config.doubleTapTimeoutMs &&
             prev.position.distanceTo(tap.position) <= config.doubleTapSlop

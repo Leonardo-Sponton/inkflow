@@ -19,6 +19,7 @@ import io.github.leonardosponton.inkflow.core.model.TabId
 import io.github.leonardosponton.inkflow.core.model.UserSettings
 import io.github.leonardosponton.inkflow.core.model.Vec2
 import io.github.leonardosponton.inkflow.domain.canvas.command.Command
+import io.github.leonardosponton.inkflow.domain.canvas.command.RemoveElements
 import io.github.leonardosponton.inkflow.domain.canvas.element.CanvasElement
 import io.github.leonardosponton.inkflow.domain.canvas.element.InkBrush
 import io.github.leonardosponton.inkflow.domain.canvas.element.InkStroke
@@ -212,6 +213,8 @@ constructor(
             EditorIntent.DismissContextMenu -> _state.update { it.copy(contextMenu = null) }
             EditorIntent.AcceptFollowUp -> acceptFollowUp()
             EditorIntent.DismissFollowUp -> _state.update { it.copy(followUp = null) }
+            is EditorIntent.DeleteWithConnections -> deleteWithConnections(intent.ids)
+            EditorIntent.DismissDelete -> _state.update { it.copy(confirmDelete = null) }
             EditorIntent.DismissMessage -> _state.update { it.copy(message = null) }
             else -> Unit
         }
@@ -221,6 +224,15 @@ constructor(
         _state.update { it.copy(tools = t) }
         if (t.kind !in setOf(ToolKind.SELECT, ToolKind.LASSO)) selection = emptySet()
         publishFrame()
+    }
+
+    private fun deleteWithConnections(ids: Set<ElementId>) {
+        _state.update { it.copy(confirmDelete = null) }
+        val scene = session.scene
+        val all = ids + ids.flatMap { id -> scene.connectorsOf(id).map { it.id } }
+        execute(RemoveElements(all))
+        seal()
+        selection = emptySet()
     }
 
     private fun acceptFollowUp() {
@@ -308,6 +320,13 @@ constructor(
     }
 
     override fun offerFollowUp(followUp: FollowUp) = _state.update { it.copy(followUp = followUp) }
+
+    override fun confirmDelete(ids: Set<ElementId>) {
+        val scene = session.scene
+        val connectors = ids.flatMap { id -> scene.connectorsOf(id).map { it.id } }.filter { it !in ids }.toSet().size
+        selection = ids
+        _state.update { it.copy(confirmDelete = DeleteRequest(ids, connectors)) }
+    }
 
     override fun invalidate() = publishFrame()
 

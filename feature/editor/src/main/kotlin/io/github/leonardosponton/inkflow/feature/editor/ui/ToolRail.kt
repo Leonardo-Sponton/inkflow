@@ -16,7 +16,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material.icons.automirrored.outlined.StickyNote2
-import androidx.compose.material.icons.outlined.AutoFixNormal
 import androidx.compose.material.icons.outlined.BorderColor
 import androidx.compose.material.icons.outlined.Category
 import androidx.compose.material.icons.outlined.Draw
@@ -56,7 +55,7 @@ private val TOOLS = listOf(
     ToolButton(ToolKind.LASSO, Icons.Outlined.Gesture, R.string.tool_lasso),
     ToolButton(ToolKind.PEN, Icons.Outlined.Draw, R.string.tool_pen),
     ToolButton(ToolKind.HIGHLIGHTER, Icons.Outlined.BorderColor, R.string.tool_highlighter),
-    ToolButton(ToolKind.ERASER, Icons.Outlined.AutoFixNormal, R.string.tool_eraser),
+    ToolButton(ToolKind.ERASER, EraserIcon, R.string.tool_eraser),
     ToolButton(ToolKind.TEXT, Icons.Outlined.TextFields, R.string.tool_text),
     ToolButton(ToolKind.STICKY, Icons.AutoMirrored.Outlined.StickyNote2, R.string.tool_sticky),
     ToolButton(ToolKind.SHAPE, Icons.Outlined.Category, R.string.tool_shapes),
@@ -103,14 +102,20 @@ fun ToolRail(
 private fun ToolOptions(tools: ToolState, onIntent: (EditorIntent) -> Unit) {
     when (tools.kind) {
         ToolKind.PEN, ToolKind.HIGHLIGHTER -> BrushOptions(tools, onIntent)
-        ToolKind.ERASER -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            EraserMode.entries.forEach { m ->
-                val name = stringResource(if (m == EraserMode.STROKE) R.string.eraser_stroke else R.string.eraser_partial)
+        ToolKind.ERASER -> Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            listOf(EraserMode.PARTIAL, EraserMode.STROKE).forEach { m ->
+                val partial = m == EraserMode.PARTIAL
+                val hint = stringResource(if (partial) R.string.eraser_partial_hint else R.string.eraser_stroke_hint)
+                val on = tools.eraserMode == m
                 Text(
-                    name,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (tools.eraserMode == m) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.clickable { onIntent(EditorIntent.SetEraserMode(m)) }.padding(6.dp),
+                    stringResource(if (partial) R.string.eraser_partial else R.string.eraser_stroke),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = if (on) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .background(if (on) MaterialTheme.colorScheme.primaryContainer else Color.Transparent, RoundedCornerShape(8.dp))
+                        .clickable { onIntent(EditorIntent.SetEraserMode(m)) }
+                        .semantics { contentDescription = hint }
+                        .padding(horizontal = 6.dp, vertical = 8.dp),
                 )
             }
         }

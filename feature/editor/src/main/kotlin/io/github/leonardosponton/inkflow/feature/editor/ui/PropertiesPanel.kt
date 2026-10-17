@@ -223,8 +223,7 @@ private fun MarkerPicker(label: String, current: MarkerKey, catalog: NotationCat
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ShapeSwitcher(node: ShapeNode, catalog: NotationCatalog, onIntent: (EditorIntent) -> Unit) {
-    val def = catalog.shapes.resolve(node.shape)
-    val siblings = catalog.shapes.inNotation(def.notation).filter { !it.isContainer && it.createContent()::class == node.content::class }
+    val siblings = shapeAlternatives(node, catalog)
     if (siblings.size < 2) return
     Section(stringResource(R.string.change_shape))
     FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {

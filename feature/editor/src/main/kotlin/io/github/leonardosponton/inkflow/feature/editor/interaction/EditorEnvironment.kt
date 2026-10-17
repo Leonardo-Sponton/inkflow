@@ -48,6 +48,9 @@ interface EditorEnvironment {
 
     fun offerFollowUp(followUp: FollowUp)
 
+    /** Ask the user whether to delete [ids] and their connectors. */
+    fun confirmDelete(ids: Set<ElementId>)
+
     /** Overlay or other transient visuals changed; redraw. */
     fun invalidate()
 }

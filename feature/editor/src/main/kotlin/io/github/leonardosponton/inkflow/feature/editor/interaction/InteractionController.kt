@@ -83,7 +83,7 @@ class InteractionController(
             is GestureEvent.StrokeEnd -> drags.end(toWorld(e.position), e.isTap)
             is GestureEvent.StrokeCancel -> drags.cancel()
             is GestureEvent.StrokeHold -> Unit
-            is GestureEvent.Tap -> onTap(e.position, e.tool)
+            is GestureEvent.Tap -> if (e.sideButton) onSideButtonTap(e.position) else onTap(e.position, e.tool)
             is GestureEvent.DoubleTap -> onDoubleTap(e.position, e.tool)
             is GestureEvent.LongPress -> onLongPress(e.position)
             is GestureEvent.MultiFingerTap -> if (e.fingers == 2) {
@@ -119,6 +119,12 @@ class InteractionController(
             ToolKind.TEXT, ToolKind.STICKY -> if (tool != ToolType.FINGER) drags.placeText(world, null)
             else -> if (tool == ToolType.FINGER) selectAt(world)
         }
+    }
+
+    /** Pen side button + tap on an element: offer to delete it with its connectors. */
+    private fun onSideButtonTap(screen: Vec2) {
+        val hit = hitTester().elementAt(toWorld(screen), tolerance()) { it !is InkStroke && it.layerId !in env.lockedLayers && !it.locked }
+        hit?.let { env.confirmDelete(expandGroup(it)) }
     }
 
     private fun selectAt(world: Vec2) {

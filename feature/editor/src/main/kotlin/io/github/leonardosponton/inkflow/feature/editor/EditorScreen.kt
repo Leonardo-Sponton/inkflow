@@ -61,6 +61,7 @@ import io.github.leonardosponton.inkflow.feature.canvasrender.InkCanvasView
 import io.github.leonardosponton.inkflow.feature.canvasrender.ShapePreview
 import io.github.leonardosponton.inkflow.feature.editor.ui.CanvasContextMenu
 import io.github.leonardosponton.inkflow.feature.editor.ui.ContextToolbar
+import io.github.leonardosponton.inkflow.feature.editor.ui.DeleteDialog
 import io.github.leonardosponton.inkflow.feature.editor.ui.EditorTopBar
 import io.github.leonardosponton.inkflow.feature.editor.ui.FollowUpDialog
 import io.github.leonardosponton.inkflow.feature.editor.ui.InlineTextEditor
@@ -334,6 +335,7 @@ private fun Overlays(vm: EditorViewModel, state: EditorUiState) {
     }
     Box(Modifier.fillMaxSize().safeDrawingPadding(), contentAlignment = Alignment.BottomCenter) { SnackbarHost(snackbar) }
     state.followUp?.let { FollowUpDialog(it, vm::onIntent) }
+    state.confirmDelete?.let { DeleteDialog(it, vm::onIntent) }
 }
 
 private const val WIDE_DP = 840

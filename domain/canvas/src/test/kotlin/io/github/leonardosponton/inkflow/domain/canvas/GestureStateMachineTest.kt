@@ -53,6 +53,16 @@ class GestureStateMachineTest {
     }
 
     @Test
+    fun `side-button taps are flagged and never double taps`() {
+        ev(PointerAction.DOWN, 0, 0, pen(10.0, 10.0), button = true)
+        val first = ev(PointerAction.UP, 0, 50, pen(10.0, 10.0), button = true).filterIsInstance<GestureEvent.Tap>().single()
+        assertTrue(first.sideButton)
+        ev(PointerAction.DOWN, 0, 100, pen(10.0, 10.0), button = true)
+        val second = ev(PointerAction.UP, 0, 150, pen(10.0, 10.0), button = true)
+        assertTrue(second.none { it is GestureEvent.DoubleTap })
+    }
+
+    @Test
     fun `pen tap then double tap`() {
         ev(PointerAction.DOWN, 0, 0, pen(10.0, 10.0))
         val first = ev(PointerAction.UP, 0, 50, pen(10.0, 10.0))

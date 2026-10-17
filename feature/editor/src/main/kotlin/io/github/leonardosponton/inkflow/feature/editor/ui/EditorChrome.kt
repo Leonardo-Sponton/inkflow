@@ -77,8 +77,10 @@ import androidx.compose.ui.window.PopupProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.leonardosponton.inkflow.core.model.GridStyle
 import io.github.leonardosponton.inkflow.domain.canvas.command.ZOrderOp
+import io.github.leonardosponton.inkflow.domain.canvas.element.ShapeNode
 import io.github.leonardosponton.inkflow.domain.canvas.notation.FollowUp
 import io.github.leonardosponton.inkflow.feature.editor.ContextMenuRequest
+import io.github.leonardosponton.inkflow.feature.editor.DeleteRequest
 import io.github.leonardosponton.inkflow.feature.editor.EditorIntent
 import io.github.leonardosponton.inkflow.feature.editor.EditorUiState
 import io.github.leonardosponton.inkflow.feature.editor.EditorViewModel
@@ -198,6 +200,11 @@ fun ContextToolbar(vm: EditorViewModel, state: EditorUiState, modifier: Modifier
         shadowElevation = 6.dp,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
+            (state.singleSelected as? ShapeNode)?.takeIf { !it.locked }?.let { node ->
+                QuickShapeButton(node, vm.catalog, vm.session.scene, state.tools.recentShapes, vm::onIntent) {
+                    if (!state.showProperties) vm.onIntent(EditorIntent.ToggleProperties)
+                }
+            }
             IconButton(onClick = { vm.onIntent(EditorIntent.Copy) }) { Icon(Icons.Outlined.ContentCopy, stringResource(R.string.copy)) }
             IconButton(onClick = { vm.onIntent(EditorIntent.Cut) }) { Icon(Icons.Outlined.ContentCut, stringResource(R.string.cut)) }
             IconButton(onClick = { vm.onIntent(EditorIntent.Duplicate) }) { Text("⧉", style = MaterialTheme.typography.titleMedium) }
@@ -308,6 +315,27 @@ fun FollowUpDialog(f: FollowUp, onIntent: (EditorIntent) -> Unit) {
         text = { Text(f.message) },
         confirmButton = { TextButton(onClick = { onIntent(EditorIntent.AcceptFollowUp) }) { Text(f.actionLabel) } },
         dismissButton = { TextButton(onClick = { onIntent(EditorIntent.DismissFollowUp) }) { Text(stringResource(R.string.not_now)) } },
+    )
+}
+
+@Composable
+fun DeleteDialog(r: DeleteRequest, onIntent: (EditorIntent) -> Unit) {
+    AlertDialog(
+        onDismissRequest = { onIntent(EditorIntent.DismissDelete) },
+        title = { Text(stringResource(R.string.delete_element_title)) },
+        text = {
+            Text(
+                if (r.connectors > 0) {
+                    stringResource(R.string.delete_element_message, r.connectors)
+                } else {
+                    stringResource(R.string.delete_element_no_connections)
+                },
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = { onIntent(EditorIntent.DeleteWithConnections(r.ids)) }) { Text(stringResource(R.string.delete)) }
+        },
+        dismissButton = { TextButton(onClick = { onIntent(EditorIntent.DismissDelete) }) { Text(stringResource(R.string.cancel)) } },
     )
 }
 

@@ -27,6 +27,9 @@ data class TextEditRequest(val id: ElementId, val text: String, val screenRect: 
 
 data class ContextMenuRequest(val screen: Vec2, val target: ElementId?)
 
+/** Asks before deleting [ids] together with their [connectors] attached connectors. */
+data class DeleteRequest(val ids: Set<ElementId>, val connectors: Int)
+
 /** Short message with an optional action (snackbar). */
 data class EditorMessage(val text: String, val actionLabel: String? = null, val action: EditorIntent? = null)
 
@@ -47,6 +50,7 @@ data class EditorUiState(
     val editing: TextEditRequest? = null,
     val contextMenu: ContextMenuRequest? = null,
     val followUp: FollowUp? = null,
+    val confirmDelete: DeleteRequest? = null,
     val message: EditorMessage? = null,
     val showPalette: Boolean = false,
     val showProperties: Boolean = true,
@@ -169,6 +173,11 @@ sealed interface EditorIntent {
     data object AcceptFollowUp : EditorIntent
 
     data object DismissFollowUp : EditorIntent
+
+    /** Deletes [ids] and every connector attached to them. */
+    data class DeleteWithConnections(val ids: Set<ElementId>) : EditorIntent
+
+    data object DismissDelete : EditorIntent
 
     data object DismissMessage : EditorIntent
 }

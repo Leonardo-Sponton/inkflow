@@ -53,8 +53,14 @@
     <string name="tool_connector">Connector</string>
     <string name="tool_image">Insert image</string>
     <string name="move_toolbar">Move toolbar to the other side</string>
-    <string name="eraser_stroke">Stroke</string>
-    <string name="eraser_partial">Partial</string>
+    <string name="eraser_stroke">Whole</string>
+    <string name="eraser_stroke_hint">Erase whole lines</string>
+    <string name="eraser_partial">Part</string>
+    <string name="eraser_partial_hint">Erase only where the eraser passes</string>
+    <string name="delete_element_title">Delete element?</string>
+    <string name="delete_element_message">The element and its %1$d connection(s) will be deleted.</string>
+    <string name="delete_element_no_connections">The element will be deleted.</string>
+    <string name="more_shapes">More shapes…</string>
     <string name="stroke">Line</string>
     <string name="fill">Fill</string>
     <string name="text">Text</string>

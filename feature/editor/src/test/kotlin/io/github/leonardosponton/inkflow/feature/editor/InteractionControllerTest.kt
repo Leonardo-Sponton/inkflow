@@ -97,6 +97,12 @@ private class FakeEnv : EditorEnvironment {
         this.followUp = followUp
     }
 
+    var deleteAsked: Set<ElementId>? = null
+
+    override fun confirmDelete(ids: Set<ElementId>) {
+        deleteAsked = ids
+    }
+
     override fun invalidate() = Unit
 }
 
@@ -250,6 +256,15 @@ class InteractionControllerTest {
         assertTrue(added.frame.top > 180.0)
         assertEquals(setOf(added.id), env.selection)
         assertEquals(2, env.session.scene.elements.values.filterIsInstance<Connector>().size)
+    }
+
+    @Test
+    fun sideButtonTapOnAnElementAsksToDeleteIt() {
+        env.execute(AddElements(listOf(node("a", 100.0, 100.0))))
+        c.onGesture(GestureEvent.Tap(p(800.0, 700.0), ToolType.STYLUS, sideButton = true))
+        assertNull(env.deleteAsked)
+        c.onGesture(GestureEvent.Tap(p(120.0, 120.0), ToolType.STYLUS, sideButton = true))
+        assertEquals(setOf(ElementId("a")), env.deleteAsked)
     }
 
     @Test
