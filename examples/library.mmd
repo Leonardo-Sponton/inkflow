@@ -1,0 +1,32 @@
+erDiagram
+    authors {
+        serial id PK
+        varchar name
+    }
+    books {
+        serial id PK
+        char isbn UK
+        varchar title
+        integer published_year
+    }
+    book_authors {
+        integer book_id PK,FK
+        integer author_id PK,FK
+    }
+    members {
+        serial id PK
+        varchar name
+        varchar email UK
+    }
+    loans {
+        serial id PK
+        integer book_id FK
+        integer member_id FK
+        timestamp loaned_at
+        date due_date
+        timestamp returned_at
+    }
+    authors ||--o{ book_authors : "has"
+    books ||--o{ book_authors : "has"
+    books ||..o{ loans : "has"
+    members ||..o{ loans : "borrows"

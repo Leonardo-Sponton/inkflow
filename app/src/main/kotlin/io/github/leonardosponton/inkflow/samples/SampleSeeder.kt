@@ -26,6 +26,7 @@ import io.github.leonardosponton.inkflow.domain.canvas.session.EditorSession
 import io.github.leonardosponton.inkflow.domain.dbmodel.ChenLink
 import io.github.leonardosponton.inkflow.domain.dbmodel.ColumnRef
 import io.github.leonardosponton.inkflow.domain.dbmodel.DbColumn
+import io.github.leonardosponton.inkflow.domain.dbmodel.DbIndex
 import io.github.leonardosponton.inkflow.domain.dbmodel.DbNotation
 import io.github.leonardosponton.inkflow.domain.dbmodel.DbRelationship
 import io.github.leonardosponton.inkflow.domain.dbmodel.DbShapes
@@ -65,6 +66,7 @@ constructor(
         if (kind == "all" || kind == "flowchart") flowchart()
         if (kind == "all" || kind == "uml") uml()
         if (kind == "all" || kind == "db") database()
+        if (kind == "all" || kind == "library") library()
         if (kind == "all" || kind == "shapes") allShapes()
         if (kind == "all" || kind == "stress") stress(STRESS_COUNT)
     }
@@ -365,6 +367,107 @@ constructor(
         c.connect(order, has)
         c.connect(has, line)
         save(chenTab, c.elements)
+    }
+
+    /** Small library ER model: Chen conceptual tab plus the Crow's Foot tables it maps to. */
+    private suspend fun library() {
+        val (p, tab) = newProject("Example · Library ER model", DiagramProfile.DATABASE, "Conceptual")
+        val c = Builder()
+        val author = c.label(DbShapes.Entity, 0.0, 258.0, "Author")
+        val writes = c.label(DbShapes.Relationship, 260.0, 250.0, "writes")
+        val book = c.label(DbShapes.Entity, 520.0, 258.0, "Book")
+        val borrows = c.label(DbShapes.Relationship, 780.0, 250.0, "borrows")
+        val member = c.label(DbShapes.Entity, 1040.0, 258.0, "Member")
+        c.connect(author, writes) { DbNotation.applyChen(it, ChenLink("M")) }
+        c.connect(writes, book) { DbNotation.applyChen(it, ChenLink("N", totalParticipation = true)) }
+        c.connect(book, borrows) { DbNotation.applyChen(it, ChenLink("N")) }
+        c.connect(borrows, member) { DbNotation.applyChen(it, ChenLink("M")) }
+        listOf(
+            Triple(DbShapes.KeyAttribute, -80.0, "id") to author,
+            Triple(DbShapes.Attribute, 100.0, "name") to author,
+            Triple(DbShapes.KeyAttribute, 440.0, "isbn") to book,
+            Triple(DbShapes.Attribute, 600.0, "title") to book,
+            Triple(DbShapes.KeyAttribute, 960.0, "id") to member,
+            Triple(DbShapes.Attribute, 1120.0, "email") to member,
+        ).forEach { (a, owner) -> c.connect(c.label(a.first, a.second, 120.0, a.third), owner) }
+        c.connect(c.label(DbShapes.Attribute, 790.0, 420.0, "due_date"), borrows)
+        save(tab, c.elements)
+
+        val tablesTab = tabs.addTab(p, "Tables", DiagramProfile.DATABASE)
+        val t = Builder()
+        val authors = t.node(
+            DbShapes.Table,
+            0.0,
+            0.0,
+            DbTableContent(
+                "authors",
+                listOf(
+                    DbColumn("aid", "id", "serial", primaryKey = true),
+                    DbColumn("aname", "name", "varchar(120)", notNull = true),
+                ),
+            ),
+        )
+        val books = t.node(
+            DbShapes.Table,
+            1120.0,
+            0.0,
+            DbTableContent(
+                "books",
+                listOf(
+                    DbColumn("bid", "id", "serial", primaryKey = true),
+                    DbColumn("bisbn", "isbn", "char(13)", notNull = true, unique = true),
+                    DbColumn("btitle", "title", "varchar(200)", notNull = true),
+                    DbColumn("byear", "published_year", "integer"),
+                ),
+            ),
+        )
+        val bookAuthors = t.node(
+            DbShapes.Table,
+            560.0,
+            0.0,
+            DbTableContent(
+                "book_authors",
+                listOf(
+                    DbColumn("babook", "book_id", "integer", primaryKey = true, references = ColumnRef(books.id.value, "bid")),
+                    DbColumn("baauthor", "author_id", "integer", primaryKey = true, references = ColumnRef(authors.id.value, "aid")),
+                ),
+            ),
+        )
+        val members = t.node(
+            DbShapes.Table,
+            560.0,
+            420.0,
+            DbTableContent(
+                "members",
+                listOf(
+                    DbColumn("mid", "id", "serial", primaryKey = true),
+                    DbColumn("mname", "name", "varchar(120)", notNull = true),
+                    DbColumn("memail", "email", "varchar(200)", notNull = true, unique = true),
+                ),
+            ),
+        )
+        val loans = t.node(
+            DbShapes.Table,
+            1120.0,
+            420.0,
+            DbTableContent(
+                "loans",
+                listOf(
+                    DbColumn("lid", "id", "serial", primaryKey = true),
+                    DbColumn("lbook", "book_id", "integer", notNull = true, references = ColumnRef(books.id.value, "bid")),
+                    DbColumn("lmember", "member_id", "integer", notNull = true, references = ColumnRef(members.id.value, "mid")),
+                    DbColumn("lout", "loaned_at", "timestamp", notNull = true, defaultValue = "CURRENT_TIMESTAMP"),
+                    DbColumn("ldue", "due_date", "date", notNull = true),
+                    DbColumn("lback", "returned_at", "timestamp"),
+                ),
+                indexes = listOf(DbIndex("loans_member_idx", listOf("lmember"))),
+            ),
+        )
+        t.connect(bookAuthors, authors) { DbNotation.applyRelationship(it, DbRelationship(identifying = true, fkColumnId = "baauthor")) }
+        t.connect(bookAuthors, books) { DbNotation.applyRelationship(it, DbRelationship(identifying = true, fkColumnId = "babook")) }
+        t.connect(loans, books) { DbNotation.applyRelationship(it, DbRelationship(fkColumnId = "lbook")) }
+        t.connect(loans, members) { DbNotation.applyRelationship(it, DbRelationship(name = "borrows", fkColumnId = "lmember")) }
+        save(tablesTab, t.elements)
     }
 
     private suspend fun allShapes() {

@@ -46,6 +46,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.boundsInParent
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
@@ -230,7 +231,11 @@ private fun CanvasArea(
             onSwapSide = swapSide,
             modifier = Modifier.align(
                 if (toolbarRight) Alignment.CenterEnd else Alignment.CenterStart,
-            ).padding(12.dp).heightIn(max = 720.dp),
+            ).padding(12.dp).heightIn(max = 720.dp).onGloballyPositioned { rail ->
+                val canvasWidth = rail.parentLayoutCoordinates?.size?.width ?: return@onGloballyPositioned
+                val b = rail.boundsInParent()
+                vm.fitInsets = if (toolbarRight) 0.0 to (canvasWidth - b.left).toDouble() else b.right.toDouble() to 0.0
+            },
         )
         ContextToolbar(vm, state, Modifier)
         Column(Modifier.align(Alignment.BottomEnd).padding(12.dp), horizontalAlignment = Alignment.End) {

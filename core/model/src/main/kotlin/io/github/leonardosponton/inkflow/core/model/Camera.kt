@@ -69,13 +69,26 @@ data class Camera(val center: Vec2 = Vec2.Zero, val zoom: Double = 1.0, val rota
 
         fun clampZoom(z: Double): Double = z.coerceIn(MIN_ZOOM, MAX_ZOOM)
 
-        /** Camera that shows [content] inside [viewport] with [paddingPx] screen pixels around it. */
-        fun fit(content: Rect, viewport: Size, paddingPx: Double = 48.0, maxZoom: Double = 2.0): Camera {
-            val w = (viewport.width - 2 * paddingPx).coerceAtLeast(1.0)
+        /**
+         * Camera that shows [content] inside [viewport] with [paddingPx] screen pixels around it,
+         * leaving [insetLeft]/[insetRight] screen pixels free (e.g. under a floating tool rail).
+         */
+        fun fit(
+            content: Rect,
+            viewport: Size,
+            paddingPx: Double = 48.0,
+            maxZoom: Double = 2.0,
+            insetLeft: Double = 0.0,
+            insetRight: Double = 0.0,
+        ): Camera {
+            val w = (viewport.width - insetLeft - insetRight - 2 * paddingPx).coerceAtLeast(1.0)
             val h = (viewport.height - 2 * paddingPx).coerceAtLeast(1.0)
             val zx = if (content.width > 0) w / content.width else maxZoom
             val zy = if (content.height > 0) h / content.height else maxZoom
-            return Camera(content.center, clampZoom(min(min(zx, zy), maxZoom)))
+            val zoom = clampZoom(min(min(zx, zy), maxZoom))
+            // Centre the content in the free area rather than in the whole viewport.
+            val shift = (insetLeft - insetRight) / 2 / zoom
+            return Camera(Vec2(content.center.x - shift, content.center.y), zoom)
         }
 
         fun rotate(v: Vec2, radians: Double): Vec2 {

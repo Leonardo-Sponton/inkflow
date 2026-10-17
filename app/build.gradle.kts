@@ -11,6 +11,10 @@ android {
         versionName = "0.1.0"
     }
     buildTypes {
+        debug {
+            // `-Pinkflow.appIdSuffix=.demo` installs a separate copy beside the regular one (screenshots, demos).
+            providers.gradleProperty("inkflow.appIdSuffix").orNull?.let { applicationIdSuffix = it }
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true

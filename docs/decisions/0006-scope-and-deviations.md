@@ -16,7 +16,7 @@ Status: accepted (2026-10-15)
 | JUnit 5 | Used for all pure-Kotlin modules; Android modules use JUnit 4. |
 | Stretch: DDL import, PlantUML, Mermaid | Implemented. |
 
-## Backlog (out of scope for v1, spec §11 plus leftovers)
+## Backlog (out of scope for v1)
 Cloud sync, real-time collaboration, BPMN/C4/network diagrams, AI features, handwriting OCR with
 downloaded models, code generation from UML beyond PlantUML text, layer manager UI, connector
 waypoint insertion by dragging segments, textured pencil brush, release keystore.

@@ -311,8 +311,11 @@ constructor(
 
     override fun fitToContent() {
         val bounds = session.index.contentBounds() ?: Rect(-FIT_EMPTY, -FIT_EMPTY, FIT_EMPTY, FIT_EMPTY)
-        setCamera(Camera.fit(bounds, viewport))
+        setCamera(Camera.fit(bounds, viewport, insetLeft = fitInsets.first, insetRight = fitInsets.second))
     }
+
+    /** Screen pixels covered by floating UI on the left/right of the canvas; [fitToContent] avoids them. */
+    var fitInsets: Pair<Double, Double> = 0.0 to 0.0
 
     override fun editText(id: ElementId) = editActions.beginTextEdit(id)
 

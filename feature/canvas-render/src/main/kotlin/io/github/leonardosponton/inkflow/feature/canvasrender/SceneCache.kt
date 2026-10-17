@@ -60,6 +60,9 @@ internal class SceneCache(private val view: InkCanvasView) {
     fun draw(canvas: Canvas, f: RenderFrame, viewport: Size, worldToScreen: Matrix) {
         val c = f.camera
         val st = Style(c.zoom, c.rotation, f.grid, f.darkCanvas, f.hidden, f.hiddenLayers)
+        // HWUI frees the display lists of the whole view tree while the window is hidden (e.g. a
+        // file picker on top); tiles would then draw nothing, so record them again.
+        if (tiles.values.any { !it.hasDisplayList() } || (appended.isNotEmpty() && !overlay.hasDisplayList())) style = null
         val current = style
         if (f.zooming && current != null && current.copy(zoom = c.zoom) == st && current.zoom != c.zoom) {
             drawScaled(canvas, current, worldToScreen)

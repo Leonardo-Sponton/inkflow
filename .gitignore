@@ -21,3 +21,6 @@ signing.properties
 # Device captures (screen recordings, screenshots)
 *.mp4
 /screenshots/
+
+# Original product brief (kept locally, not published)
+docs/SPEC.md

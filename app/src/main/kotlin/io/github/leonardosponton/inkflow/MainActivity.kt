@@ -59,7 +59,7 @@ class MainActivity : ComponentActivity() {
         seedIfRequested()
     }
 
-    /** Debug/benchmark builds only: `--es seed all|flowchart|uml|db|shapes|stress`. */
+    /** Debug/benchmark builds only: `--es seed all|flowchart|uml|db|library|shapes|stress`. */
     private fun seedIfRequested() {
         val kind = intent?.getStringExtra(EXTRA_SEED) ?: return
         if (!BuildConfig.DEBUG && !BuildConfig.BUILD_TYPE.startsWith("benchmark") &&

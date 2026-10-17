@@ -5,15 +5,27 @@ import io.github.leonardosponton.inkflow.core.model.ProjectId
 import java.io.InputStream
 import java.io.OutputStream
 
-enum class ExportFormat(val extension: String, val mimeType: String, val displayName: String) {
+/**
+ * [saveMimeType] is what the save dialog gets: file pickers append the MIME type's own extension
+ * when the name's extension does not match it (`x.inkflow.zip`, `x.puml.txt`), so formats with
+ * their own extension are saved as opaque bytes.
+ */
+enum class ExportFormat(
+    val extension: String,
+    val mimeType: String,
+    val displayName: String,
+    val saveMimeType: String = mimeType,
+) {
     PNG("png", "image/png", "PNG image"),
     PDF("pdf", "application/pdf", "PDF document"),
     SVG("svg", "image/svg+xml", "SVG vector image"),
-    INKFLOW("inkflow", "application/zip", "Inkflow project"),
+    INKFLOW("inkflow", "application/zip", "Inkflow project", OPAQUE),
     SQL("sql", "application/sql", "SQL DDL"),
-    PLANTUML("puml", "text/plain", "PlantUML"),
-    MERMAID("mmd", "text/plain", "Mermaid erDiagram"),
+    PLANTUML("puml", "text/plain", "PlantUML", OPAQUE),
+    MERMAID("mmd", "text/plain", "Mermaid erDiagram", OPAQUE),
 }
+
+private const val OPAQUE = "application/octet-stream"
 
 enum class ExportScope { TAB, SELECTION, PROJECT }
 

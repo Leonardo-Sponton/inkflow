@@ -119,7 +119,7 @@ fun ExportSheet(target: ExportTarget, hasSelection: Boolean, onDismiss: () -> Un
     val o = state.options
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val save = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument(o.format.mimeType)) { uri ->
+    val save = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument(o.format.saveMimeType)) { uri ->
         uri?.let { viewModel.saveTo(context, target, it) }
     }
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {

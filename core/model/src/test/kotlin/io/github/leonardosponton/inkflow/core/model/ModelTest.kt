@@ -48,6 +48,10 @@ class ModelTest {
         assertEquals(0.5, fit.zoom, 1e-9)
         assertEquals(Vec2(1000.0, 500.0), fit.center)
         assertEquals(2.0, Camera.fit(Rect(0.0, 0.0, 0.0, 0.0), vp).zoom)
+        // A 200 px rail on the left: content fills the remaining width and starts right after it.
+        val railed = Camera.fit(Rect(0.0, 0.0, 2000.0, 1000.0), vp, paddingPx = 0.0, insetLeft = 200.0)
+        assertEquals(vp.width - 200.0, 2000.0 * railed.zoom, 1e-9)
+        assertEquals(200.0, railed.worldToScreen(Vec2(0.0, 500.0), vp).x, 1e-9)
     }
 
     @Test

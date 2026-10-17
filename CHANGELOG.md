@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+### Fixes after on-device testing
+- Typing in the properties panel no longer triggers editor shortcuts; palette drags scroll unless
+  a shape is armed; newly added elements render immediately.
+- Eraser icon with Part/Whole modes; S Pen side button erases mid-stroke and, on a tap, offers to
+  delete an element with its connections; quick-connect arrows; quick shape switcher.
+- Text editing on double tap only; tool rail tooltips on long-press.
+- Canvas content stays still when side panels or the keyboard resize the view.
+- Fit-to-content leaves the floating tool rail free.
+- The canvas no longer goes blank after returning from the system file picker (HWUI frees the
+  tiles' display lists while the window is hidden; they are re-recorded).
+- Saving `.inkflow`, `.puml` and `.mmd` files no longer gets an extra `.zip`/`.txt` extension.
+- Library ER example (`--es seed library`, `examples/`); `-Pinkflow.appIdSuffix` installs a
+  side-by-side copy.
+
 ### Phase 9 — Polish & performance
 - Tiled scene cache: 512 px `RenderNode` tiles; pans record only new tiles, edits re-record only
   the tiles they touch, new ink goes to an overlay; pixel-snapped (sharper while panning).
