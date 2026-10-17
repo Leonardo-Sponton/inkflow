@@ -30,6 +30,8 @@ data class Overlay(
     val dropTarget: Rect? = null,
     val warnings: List<Rect> = emptyList(),
     val waypoints: List<Vec2> = emptyList(),
+    /** Quick-connect arrows: center and unit direction. */
+    val quickArrows: List<Pair<Vec2, Vec2>> = emptyList(),
 ) {
     companion object {
         val Empty = Overlay()

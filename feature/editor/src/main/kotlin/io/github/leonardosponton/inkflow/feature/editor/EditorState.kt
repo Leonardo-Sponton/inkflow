@@ -114,6 +114,8 @@ sealed interface EditorIntent {
 
     data object ToggleMinimap : EditorIntent
 
+    data object ToggleDarkCanvas : EditorIntent
+
     data class JumpTo(val world: Vec2) : EditorIntent
 
     // selection editing

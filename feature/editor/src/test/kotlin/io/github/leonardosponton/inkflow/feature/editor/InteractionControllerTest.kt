@@ -230,6 +230,29 @@ class InteractionControllerTest {
     }
 
     @Test
+    fun quickConnectArrowsReachTheNearestShapeOrAddOne() {
+        env.tools = env.tools.copy(kind = ToolKind.SELECT)
+        env.execute(AddElements(listOf(node("a", 100.0, 100.0), node("b", 400.0, 120.0))))
+        assertTrue(c.overlay().quickArrows.isEmpty())
+        c.onGesture(GestureEvent.Tap(p(120.0, 120.0), ToolType.STYLUS))
+        assertEquals(4, c.overlay().quickArrows.size)
+        // Right arrow: 34 px right of a's right edge, vertically centered.
+        c.onGesture(GestureEvent.Tap(p(234.0, 130.0), ToolType.FINGER))
+        val first = env.session.scene.elements.values.filterIsInstance<Connector>().single()
+        assertEquals(ElementId("b"), (first.target as Endpoint.Attached).node)
+        assertEquals(setOf(ElementId("b")), env.selection)
+        // Down arrow of b: nothing below, so a copy of b is added and linked.
+        c.onGesture(start(450.0, 214.0))
+        c.onGesture(GestureEvent.StrokeEnd(0, p(450.0, 214.0), 30, isTap = true))
+        c.onGesture(GestureEvent.Tap(p(450.0, 214.0), ToolType.STYLUS))
+        val added = env.session.scene.elements.values.filterIsInstance<ShapeNode>().single { it.id.value !in setOf("a", "b") }
+        assertEquals(BasicShapes.Rectangle.key, added.shape)
+        assertTrue(added.frame.top > 180.0)
+        assertEquals(setOf(added.id), env.selection)
+        assertEquals(2, env.session.scene.elements.values.filterIsInstance<Connector>().size)
+    }
+
+    @Test
     fun fingerActsAsPenOnlyOverSelectableThings() {
         env.execute(AddElements(listOf(node("a", 100.0, 100.0))))
         env.tools = env.tools.copy(kind = ToolKind.SELECT)

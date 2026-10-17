@@ -27,12 +27,14 @@ class InteractionController(
     private val env: EditorEnvironment,
     private val recognizer: ShapeRecognizer = GeometricShapeRecognizer(),
 ) {
-    private val drags = DragOperations(env)
+    private val quick = QuickConnect(env)
+    private val drags = DragOperations(env) { quick.arrowAt(it) != null }
     private var hover: Vec2? = null
     private var hoverEraser = false
 
     /** Current overlay for the renderer. */
     fun overlay(): Overlay = drags.decorate(selectionOverlay()).copy(
+        quickArrows = quick.arrows().map { (dir, p) -> p to dir.unit },
         ports = hoverPorts(),
         brushCursor = brushCursor(),
         eraser = eraserCursor(),
@@ -51,6 +53,7 @@ class InteractionController(
     /** Wet-ink brush for strokes that should become ink, `null` otherwise. */
     fun inkBrushFor(start: GestureEvent.StrokeStart): InkBrush? {
         if (effectiveTool(start) !in INK_TOOLS) return null
+        if (quick.arrowAt(toWorld(start.position)) != null) return null // a tap on an arrow, not a dot of ink
         if (env.activeLayer in env.lockedLayers) return null
         return env.tools.activeBrush
     }
@@ -106,6 +109,10 @@ class InteractionController(
 
     private fun onTap(screen: Vec2, tool: ToolType) {
         val world = toWorld(screen)
+        quick.arrowAt(world)?.let {
+            quick.connect(it)
+            return
+        }
         when (env.tools.kind) {
             ToolKind.SELECT, ToolKind.LASSO -> selectAt(world)
             ToolKind.SHAPE -> if (tool != ToolType.FINGER) drags.placeDefaultShape(world)

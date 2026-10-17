@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,6 +35,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -61,7 +63,8 @@ interface PaletteDragListener {
 
 /**
  * Searchable shape library grouped by notation, with recently used shapes first. Tap a shape to
- * arm the shape tool, or drag it onto the canvas with a finger or the pen.
+ * arm the shape tool; drag the armed shape (or long-press any shape) onto the canvas. Unarmed
+ * shapes ignore plain drags so scrolling the list never picks one up by accident.
  */
 @Composable
 fun ShapePalette(
@@ -123,17 +126,23 @@ private fun ShapeCell(def: ShapeDefinition, selected: Boolean, onPick: (ShapeTyp
             .border(if (selected) 2.dp else 1.dp, border, RoundedCornerShape(8.dp))
             .background(MaterialTheme.colorScheme.surfaceContainerLow, RoundedCornerShape(8.dp))
             .clickable { onPick(def.key) }
-            .pointerInput(def.key) {
-                detectDragGestures(
-                    onDragStart = { pointer = it },
-                    onDrag = { change, amount ->
-                        change.consume()
-                        pointer += amount
-                        drag.onDrag(def.key, origin + pointer)
-                    },
-                    onDragEnd = { drag.onDrop(def.key, origin + pointer) },
-                    onDragCancel = { drag.onCancel() },
-                )
+            .pointerInput(def.key, selected) {
+                val onStart = { at: Offset ->
+                    pointer = at
+                    drag.onDrag(def.key, origin + pointer)
+                }
+                val onMove = { change: PointerInputChange, amount: Offset ->
+                    change.consume()
+                    pointer += amount
+                    drag.onDrag(def.key, origin + pointer)
+                }
+                val onEnd = { drag.onDrop(def.key, origin + pointer) }
+                val onCancel = { drag.onCancel() }
+                if (selected) {
+                    detectDragGestures(onStart, onEnd, onCancel, onMove)
+                } else {
+                    detectDragGesturesAfterLongPress(onStart, onEnd, onCancel, onMove)
+                }
             }
             .padding(4.dp)
             .semantics { contentDescription = def.displayName },

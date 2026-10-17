@@ -42,6 +42,17 @@ class GestureStateMachineTest {
     }
 
     @Test
+    fun `pressing the side button mid-stroke restarts it as a side-button stroke`() {
+        ev(PointerAction.DOWN, 0, 0, pen(0.0, 0.0))
+        ev(PointerAction.MOVE, 0, 10, pen(20.0, 0.0))
+        val switched = ev(PointerAction.MOVE, 0, 20, pen(40.0, 0.0), button = true)
+        assertTrue(switched[0] is GestureEvent.StrokeCancel)
+        assertEquals(StrokeModifier.SIDE_BUTTON, (switched[1] as GestureEvent.StrokeStart).modifier)
+        assertTrue(ev(PointerAction.MOVE, 0, 30, pen(60.0, 0.0), button = true).single() is GestureEvent.StrokeMove)
+        assertTrue(ev(PointerAction.UP, 0, 40, pen(60.0, 0.0)).single() is GestureEvent.StrokeEnd)
+    }
+
+    @Test
     fun `pen tap then double tap`() {
         ev(PointerAction.DOWN, 0, 0, pen(10.0, 10.0))
         val first = ev(PointerAction.UP, 0, 50, pen(10.0, 10.0))

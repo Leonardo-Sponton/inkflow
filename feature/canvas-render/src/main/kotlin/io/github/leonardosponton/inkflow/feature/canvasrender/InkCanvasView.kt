@@ -192,8 +192,10 @@ class InkCanvasView(context: Context, private val drawer: SceneDrawer) : FrameLa
     override fun onTouchEvent(event: MotionEvent): Boolean {
         if (event.actionMasked == MotionEvent.ACTION_DOWN) {
             if (event.getToolType(0) != MotionEvent.TOOL_TYPE_FINGER) requestUnbufferedDispatch(event)
-            requestFocus()
         }
+        // Side-button press/release while touching: not a pointer change. The button state is
+        // read from the following moves; mapping these to CANCEL would drop the stroke.
+        if (event.actionMasked == MotionEvent.ACTION_BUTTON_PRESS || event.actionMasked == MotionEvent.ACTION_BUTTON_RELEASE) return true
         predictor.record(event)
         if (event.actionMasked == MotionEvent.ACTION_MOVE) {
             for (h in 0 until event.historySize) dispatch(event, toInput(event, PointerAction.MOVE, h), historical = true)

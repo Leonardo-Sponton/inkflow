@@ -5,6 +5,8 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -41,7 +43,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
@@ -88,7 +92,8 @@ fun EditorScreen(viewModel: EditorViewModel, onBack: () -> Unit) {
     Surface(Modifier.fillMaxSize()) {
         Column(
             Modifier.fillMaxSize().safeDrawingPadding()
-                .onPreviewKeyEvent { keyboardShortcut(it, state, onIntent) }
+                // Bubbling (not preview): focused text fields consume their own keys first.
+                .onKeyEvent { keyboardShortcut(it, state, onIntent) }
                 .focusRequester(focus)
                 .focusable(),
         ) {
@@ -111,7 +116,7 @@ fun EditorScreen(viewModel: EditorViewModel, onBack: () -> Unit) {
                 Row(Modifier.fillMaxSize()) {
                     if (state.showPalette && wide) PaletteSide(viewModel, state, Modifier.width(PALETTE_DP.dp).fillMaxHeight())
                     Box(Modifier.weight(1f).fillMaxHeight()) {
-                        CanvasArea(viewModel, state, toolbarRight, { toolbarRight = !toolbarRight }, imagePicker)
+                        CanvasArea(viewModel, state, toolbarRight, { toolbarRight = !toolbarRight }, imagePicker) { focus.requestFocus() }
                     }
                     if (wide && state.hasSelection && state.showProperties) {
                         Surface(tonalElevation = 1.dp, modifier = Modifier.width(PANEL_DP.dp).fillMaxHeight()) {
@@ -185,7 +190,14 @@ private fun rememberDdlPicker(onIntent: (EditorIntent) -> Unit): () -> Unit {
 }
 
 @Composable
-private fun CanvasArea(vm: EditorViewModel, state: EditorUiState, toolbarRight: Boolean, swapSide: () -> Unit, pickImage: () -> Unit) {
+private fun CanvasArea(
+    vm: EditorViewModel,
+    state: EditorUiState,
+    toolbarRight: Boolean,
+    swapSide: () -> Unit,
+    pickImage: () -> Unit,
+    focusEditor: () -> Unit,
+) {
     var canvasOrigin by remember { mutableStateOf(Offset.Zero) }
     var canvasView by remember { mutableStateOf<InkCanvasView?>(null) }
     Box(Modifier.fillMaxSize().onGloballyPositioned { canvasOrigin = it.boundsInRoot().topLeft }) {
@@ -199,7 +211,14 @@ private fun CanvasArea(vm: EditorViewModel, state: EditorUiState, toolbarRight: 
                 canvasView = view
                 view
             },
-            modifier = Modifier.fillMaxSize().clipToBounds(),
+            modifier = Modifier.fillMaxSize().clipToBounds().pointerInput(Unit) {
+                // Touching the canvas moves focus from text fields (properties panel) back to the
+                // editor, so keyboard shortcuts such as Delete act on the selection again.
+                awaitEachGesture {
+                    awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                    focusEditor()
+                }
+            },
         )
         // Frames go straight into the view, without recomposition.
         LaunchedEffect(canvasView) { canvasView?.let { v -> vm.frame.collect { v.frame = it } } }

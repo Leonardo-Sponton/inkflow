@@ -9,6 +9,7 @@
     <string name="export">Export</string>
     <string name="more">More</string>
     <string name="background">Background</string>
+    <string name="dark_canvas">Dark canvas</string>
     <string name="select_all">Select all</string>
     <string name="paste">Paste</string>
     <string name="copy">Copy</string>

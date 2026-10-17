@@ -207,6 +207,7 @@ constructor(
             EditorIntent.ZoomReset -> setCamera(camera.copy(zoom = 1.0, rotation = 0.0))
             EditorIntent.FitContent -> fitToContent()
             EditorIntent.ToggleMinimap -> viewModelScope.launch { settingsRepository.update { it.copy(showMinimap = !it.showMinimap) } }
+            EditorIntent.ToggleDarkCanvas -> viewModelScope.launch { settingsRepository.update { it.copy(darkCanvas = !it.darkCanvas) } }
             is EditorIntent.JumpTo -> setCamera(camera.copy(center = intent.world))
             EditorIntent.DismissContextMenu -> _state.update { it.copy(contextMenu = null) }
             EditorIntent.AcceptFollowUp -> acceptFollowUp()

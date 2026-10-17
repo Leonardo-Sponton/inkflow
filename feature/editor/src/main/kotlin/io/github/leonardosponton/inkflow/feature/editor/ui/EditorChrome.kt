@@ -20,6 +20,7 @@ import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.ContentCut
 import androidx.compose.material.icons.outlined.ContentPaste
+import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.GridOn
 import androidx.compose.material.icons.outlined.IosShare
@@ -148,6 +149,14 @@ fun EditorTopBar(
                             },
                         )
                     }
+                    DropdownMenuItem(
+                        leadingIcon = { Icon(Icons.Outlined.DarkMode, null) },
+                        text = { Text((if (state.settings.darkCanvas) "✓ " else "") + stringResource(R.string.dark_canvas)) },
+                        onClick = {
+                            menu = false
+                            onIntent(EditorIntent.ToggleDarkCanvas)
+                        },
+                    )
                     HorizontalDivider()
                     DropdownMenuItem(text = { Text(stringResource(R.string.select_all)) }, onClick = {
                         menu = false
@@ -179,7 +188,8 @@ fun ContextToolbar(vm: EditorViewModel, state: EditorUiState, modifier: Modifier
     if (!state.hasSelection || state.editing != null) return
     val density = LocalDensity.current
     val heightPx = with(density) { TOOLBAR_H.dp.toPx() }
-    val y = (r.top - heightPx - with(density) { 12.dp.toPx() }).coerceAtLeast(0.0)
+    // Leave room for the quick-connect arrow above a selected shape.
+    val y = (r.top - heightPx - with(density) { TOOLBAR_GAP.dp.toPx() }).coerceAtLeast(0.0)
     val locked = state.selected.all { it.locked }
     Surface(
         modifier.offset { IntOffset(r.left.roundToInt().coerceAtLeast(0), y.roundToInt()) },
@@ -378,6 +388,7 @@ fun keyboardShortcut(e: KeyEvent, state: EditorUiState, onIntent: (EditorIntent)
 }
 
 private const val TOOLBAR_H = 48
+private const val TOOLBAR_GAP = 36
 private const val KEY_ZOOM = 1.25
 private const val STICKY = 0xFFFFF59D
 private const val MIN_EDIT_PX = 14f

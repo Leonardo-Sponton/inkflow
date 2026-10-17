@@ -2,6 +2,7 @@ package io.github.leonardosponton.inkflow.feature.canvasrender
 
 import android.graphics.Canvas
 import android.graphics.Matrix
+import android.graphics.RectF
 import android.graphics.RenderNode
 import io.github.leonardosponton.inkflow.core.model.ElementId
 import io.github.leonardosponton.inkflow.core.model.Rect
@@ -10,6 +11,7 @@ import io.github.leonardosponton.inkflow.core.model.Vec2
 import io.github.leonardosponton.inkflow.domain.canvas.element.CanvasElement
 import io.github.leonardosponton.inkflow.domain.canvas.scene.Scene
 import kotlin.math.abs
+import kotlin.math.ceil
 import kotlin.math.cos
 import kotlin.math.floor
 import kotlin.math.roundToInt
@@ -148,14 +150,28 @@ internal class SceneCache(private val view: InkCanvasView) {
         appended = (appended + fresh).sortedWith(Scene.Z_ORDER)
         appendedIds = appendedIds + fresh.map { it.id }
         topZ = appended.last().zIndex
+        recordOverlay(f)
+        return true
+    }
+
+    private fun recordOverlay(f: RenderFrame) {
+        baseMatrix(f.camera.zoom, f.camera.rotation, tileMatrix)
+        // The node needs real bounds: HWUI culls a render node by its position rect, so a 0×0
+        // node (never positioned) is skipped and new elements stayed invisible until a re-tile.
+        val world = Rect.unionAll(appended.map { it.bounds }) ?: return
+        val area = RectF(world.left.toFloat(), world.top.toFloat(), world.right.toFloat(), world.bottom.toFloat())
+        tileMatrix.mapRect(area)
+        val pad = InkCanvasView.CULL_MARGIN.toFloat()
+        val left = floor(area.left - pad).toInt()
+        val top = floor(area.top - pad).toInt()
+        overlay.setPosition(left, top, ceil(area.right + pad).toInt(), ceil(area.bottom + pad).toInt())
+        tileMatrix.postTranslate(-left.toFloat(), -top.toFloat())
         val c = overlay.beginRecording()
         try {
-            baseMatrix(f.camera.zoom, f.camera.rotation, tileMatrix)
             view.drawElements(c, f, appended, tileMatrix)
         } finally {
             overlay.endRecording()
         }
-        return true
     }
 
     private fun clearAppended(s: Scene) {

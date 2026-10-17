@@ -105,6 +105,7 @@ class GestureStateMachine(
             var stillSince: Long = startTime,
             var holdFired: Boolean = false,
             var longPressFired: Boolean = false,
+            val modifier: StrokeModifier = StrokeModifier.NONE,
         ) : State
 
         data class FingerPending(val pointerId: Int, val start: Vec2, val startTime: Long, var longPressFired: Boolean = false) : State
@@ -206,13 +207,38 @@ class GestureStateMachine(
                     e.stylusButton -> StrokeModifier.SIDE_BUTTON
                     else -> StrokeModifier.NONE
                 }
-                state = State.Stroking(p.id, p.tool, p.position, e.timeMs, p.position)
+                state = State.Stroking(p.id, p.tool, p.position, e.timeMs, p.position, modifier = modifier)
                 out += GestureEvent.StrokeStart(p.id, p.tool, modifier, p.position, e.timeMs)
             }
-            PointerAction.MOVE -> activeStroke(p.id)?.let { strokeMove(it, p.position, e.timeMs, out) }
+            PointerAction.MOVE -> activeStroke(p.id)?.let { s ->
+                if (e.stylusButton && s.modifier == StrokeModifier.NONE) {
+                    switchToSideButton(s, p, e.timeMs, out)
+                } else {
+                    strokeMove(s, p.position, e.timeMs, out)
+                }
+            }
             PointerAction.UP, PointerAction.POINTER_UP -> activeStroke(p.id)?.let { endStroke(it, p.position, e.timeMs, out) }
             else -> Unit
         }
+    }
+
+    /**
+     * The side button was pressed while the pen is already down: drop what was drawn so far and
+     * continue as a side-button stroke (eraser by default) from here.
+     */
+    private fun switchToSideButton(s: State.Stroking, p: PointerSample, time: Long, out: MutableList<GestureEvent>) {
+        out += GestureEvent.StrokeCancel(s.pointerId)
+        state = State.Stroking(
+            p.id,
+            p.tool,
+            p.position,
+            time,
+            p.position,
+            moved = true,
+            longPressFired = true,
+            modifier = StrokeModifier.SIDE_BUTTON,
+        )
+        out += GestureEvent.StrokeStart(p.id, p.tool, StrokeModifier.SIDE_BUTTON, p.position, time)
     }
 
     private fun activeStroke(pointerId: Int) = (state as? State.Stroking)?.takeIf { it.pointerId == pointerId }

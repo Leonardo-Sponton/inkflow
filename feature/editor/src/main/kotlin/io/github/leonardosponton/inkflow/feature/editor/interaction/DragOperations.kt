@@ -36,7 +36,11 @@ import kotlin.math.abs
 import kotlin.math.max
 
 /** Continuous pen/finger drags: move, resize, marquee, lasso, erase, connect and place. */
-internal class DragOperations(private val env: EditorEnvironment) {
+internal class DragOperations(
+    private val env: EditorEnvironment,
+    /** Is there a quick-connect arrow at this world point? (a tap on it is handled by the controller) */
+    private val quickArrowAt: (Vec2) -> Boolean = { false },
+) {
     private sealed interface Drag {
         data class Moving(val ids: Set<ElementId>, val start: Vec2, val startBounds: Rect?, var applied: Vec2 = Vec2.Zero) : Drag
 
@@ -88,7 +92,7 @@ internal class DragOperations(private val env: EditorEnvironment) {
             val bounds = selectionBounds() ?: return null
             return Drag.Resizing(h, env.selection, world, bounds, bounds)
         }
-        waypointAt(world)?.let { return it }
+        (arrowDrag(world) ?: waypointAt(world))?.let { return it }
         portAt(world)?.let { return connectFrom(it) }
         val hit = hitTester().elementAt(world, tolerance()) { it.layerId !in env.lockedLayers }
         if (hit != null) {
@@ -98,6 +102,13 @@ internal class DragOperations(private val env: EditorEnvironment) {
         if (insideSelection(world)) return moving(env.selection, world)
         env.selection = emptySet()
         return Drag.Marquee(world, world)
+    }
+
+    /** Dragging from a quick-connect arrow draws a connector by hand (a tap is a quick connect). */
+    private fun arrowDrag(world: Vec2): Drag? {
+        if (!quickArrowAt(world)) return null
+        val source = single(env.selection) as? ShapeNode ?: return null
+        return Drag.Connecting(Endpoint.Attached(source.id, null), source.frame.center, world)
     }
 
     private fun startConnector(world: Vec2): Drag {
@@ -137,7 +148,7 @@ internal class DragOperations(private val env: EditorEnvironment) {
             is Drag.Moving -> if (d.applied != Vec2.Zero) env.execute(MoveElements(d.ids, Vec2.Zero, reparent = true), key)
             is Drag.Marquee -> if (!isTap) env.selection = expandAll(hitTester().inRect(Rect.fromPoints(d.start, d.end)))
             is Drag.Lasso -> if (d.points.size > 2) env.selection = expandAll(hitTester().inLasso(d.points))
-            is Drag.Connecting -> finishConnecting(d)
+            is Drag.Connecting -> if (!isTap) finishConnecting(d)
             is Drag.Placing -> if (!isTap) finishPlacing(d)
             else -> Unit
         }

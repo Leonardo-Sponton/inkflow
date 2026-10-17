@@ -48,6 +48,7 @@ class OverlayDrawer {
 
     private fun drawMarkers(canvas: Canvas, o: Overlay, px: Float, palette: CanvasPalette) {
         if (o.connectorPreview.size > 1) polyline(canvas, o.connectorPreview, palette.selection, 2 * px, dashed = true, px, closed = false)
+        o.quickArrows.forEach { (c, dir) -> arrow(canvas, c, dir, px, palette) }
         o.waypoints.forEach { dot(canvas, it, WAYPOINT_R * px, palette.handleFill, palette.selection, px) }
         o.ports.forEach { dot(canvas, it, PORT_R * px, palette.handleFill, palette.port, px) }
         o.activePort?.let { dot(canvas, it, ACTIVE_PORT_R * px, palette.port, palette.port, px) }
@@ -92,6 +93,21 @@ class OverlayDrawer {
         canvas.drawCircle(p.x.toFloat(), p.y.toFloat(), r, line)
     }
 
+    /** Round button with a triangle pointing along [dir]. */
+    private fun arrow(canvas: Canvas, c: Vec2, dir: Vec2, px: Float, palette: CanvasPalette) {
+        dot(canvas, c, ARROW_R * px, palette.handleFill, palette.selection, px)
+        val tip = c + dir * (ARROW_TIP * px).toDouble()
+        val side = Vec2(-dir.y, dir.x) * (ARROW_HALF * px).toDouble()
+        val back = c - dir * (ARROW_TIP * px / 2).toDouble()
+        val path = Path()
+        path.moveTo(tip.x.toFloat(), tip.y.toFloat())
+        path.lineTo((back + side).x.toFloat(), (back + side).y.toFloat())
+        path.lineTo((back - side).x.toFloat(), (back - side).y.toFloat())
+        path.close()
+        fill.color = palette.selection
+        canvas.drawPath(path, fill)
+    }
+
     private fun ring(canvas: Canvas, c: Vec2, r: Float, palette: CanvasPalette, px: Float) {
         line.color = palette.selection
         line.strokeWidth = SELECTION_PX * px
@@ -105,6 +121,9 @@ class OverlayDrawer {
         private const val PORT_R = 6f
         private const val ACTIVE_PORT_R = 8f
         private const val WAYPOINT_R = 5f
+        private const val ARROW_R = 15f
+        private const val ARROW_TIP = 8f
+        private const val ARROW_HALF = 6f
         private const val DASH = 6f
         private const val WARN_PAD = 4.0
 
