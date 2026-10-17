@@ -47,7 +47,8 @@ interface CanvasHost {
 
     fun newElementId(): ElementId
 
-    fun onViewportChanged(size: Size)
+    /** The view was resized; [origin] is its top-left corner in window coordinates. */
+    fun onViewportChanged(size: Size, origin: Vec2)
 }
 
 /**
@@ -126,7 +127,8 @@ class InkCanvasView(context: Context, private val drawer: SceneDrawer) : FrameLa
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
         frame?.let { updateMatrices(it) }
-        host?.onViewportChanged(Size(w.toDouble(), h.toDouble()))
+        val at = IntArray(2).also(::getLocationInWindow)
+        host?.onViewportChanged(Size(w.toDouble(), h.toDouble()), Vec2(at[0].toDouble(), at[1].toDouble()))
     }
 
     // ---- drawing --------------------------------------------------------------------------------

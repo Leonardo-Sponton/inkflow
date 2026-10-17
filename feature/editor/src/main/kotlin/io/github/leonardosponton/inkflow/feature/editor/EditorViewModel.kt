@@ -111,6 +111,9 @@ constructor(
         private set
     override var viewport: Size = Size(DEFAULT_W, DEFAULT_H)
         private set
+
+    /** Top-left corner of the canvas view in window coordinates. */
+    private var viewOrigin = Vec2.Zero
     override val tools: ToolState get() = _state.value.tools
     override val settings: UserSettings get() = _state.value.settings
     override val activeLayer: LayerId get() = LayerId.Default
@@ -256,7 +259,7 @@ constructor(
             session = s
             selection = emptySet()
             camera = _state.value.tabs.firstOrNull { it.id == id }?.camera ?: Camera()
-            _state.update { it.copy(loading = false) }
+            _state.update { it.copy(loading = false, zoom = camera.zoom) }
             onSceneChanged(null)
             if (camera == Camera() && s.scene.size > 0 && viewport.width != DEFAULT_W) fitToContent()
             background.ensureThumbnail()
@@ -342,10 +345,24 @@ constructor(
 
     override fun onInkFinished(stroke: InkStroke) = controller.onInkFinished(stroke)
 
-    override fun onViewportChanged(size: Size) {
+    override fun onViewportChanged(size: Size, origin: Vec2) {
         val first = viewport.width == DEFAULT_W && viewport.height == DEFAULT_H
+        val old = viewport
+        val oldOrigin = viewOrigin
         viewport = size
-        if (first && camera == Camera() && session.scene.size > 0) fitToContent() else publishFrame()
+        viewOrigin = origin
+        when {
+            first && camera == Camera() && session.scene.size > 0 -> fitToContent()
+            // Side panels and the keyboard resize the view: keep the content still on screen
+            // instead of letting it slide to stay centered.
+            !first -> setCamera(
+                camera.panByScreen(
+                    oldOrigin.x - origin.x + (old.width - size.width) / 2,
+                    oldOrigin.y - origin.y + (old.height - size.height) / 2,
+                ),
+            )
+            else -> publishFrame()
+        }
     }
 
     // ---- accessibility --------------------------------------------------------------------------
